@@ -12,5 +12,4 @@ public sealed class ReportParameter
     public string? ValueField { get; set; }
     public string? Options { get; set; }
     public int SortOrder { get; set; }
-    public bool IsRequired { get; set; }
 }
