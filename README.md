@@ -27,6 +27,7 @@ Report execution limits:
 ```text
 Reports__CommandTimeoutSeconds=60
 Reports__MaxRows=5000
+Reports__MaxExcelBytes=20971520
 ```
 
 The report-target connection factory currently uses Windows Integrated Security. Under IIS, the application-pool identity must have the required read permissions on the selected report databases.
@@ -58,7 +59,7 @@ The application expects these columns:
 - `ReportDefinitions`: `Id`, `Name`, `SourceType`, `SqlQuery`, `ExcelFileName`, `ExcelContent`, `NeedsPagination`, `PageSize`, `IsDeleted`.
 - `ReportParameters`: `Id`, `ReportDefinitionId`, `Name`, `DisplayName`, `Type`, `DataSource`, `DisplayNameField`, `ValueField`, `Options`, `SortOrder`.
 
-`SourceType=Sql` is currently executable. Excel file ingestion/execution and query-backed `DataSource` option loading are not yet implemented.
+Both `SourceType=Sql` and stored `.xlsx` content are executable. Excel reports read the first worksheet, use its first used row as headers, and can filter rows by report parameters whose names match column names. Query-backed parameter options execute a single read-only SELECT against the selected target database and are limited to 2,000 options.
 
 ## Redis preference key
 
