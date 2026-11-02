@@ -74,7 +74,7 @@ public sealed class ReportsController(
 
         try
         {
-            var raw = await execution.ExecuteSqlAsync(report, values, connection, cancellationToken);
+            var raw = await execution.ExecuteAsync(report, values, connection, cancellationToken);
             var validColumns = raw.Columns.Cast<DataColumn>()
                 .Select(column => column.ColumnName).ToArray();
 
