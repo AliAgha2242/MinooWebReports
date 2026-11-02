@@ -19,8 +19,8 @@ public sealed class SsoController(
     [RequestSizeLimit(4096)]
     public async Task<IActionResult> Consume([FromForm] string? ticket, CancellationToken cancellationToken)
     {
-        Response.Headers.CacheControl = "no-store, no-cache";
-        Response.Headers.Pragma = "no-cache";
+        Response.Headers["Cache-Control"] = "no-store, no-cache";
+        Response.Headers["Pragma"] = "no-cache";
         Response.Headers["Referrer-Policy"] = "no-referrer";
         Response.Headers["X-Robots-Tag"] = "noindex, nofollow";
 
@@ -30,7 +30,7 @@ public sealed class SsoController(
         var redeemUrl = configuration["Sso:Parent:RedeemUrl"];
         var clientSecret = configuration["Sso:Parent:ClientSecret"];
         if (!Uri.TryCreate(redeemUrl, UriKind.Absolute, out var redeemUri) ||
-            string.IsNullOrWhiteSpace(clientSecret))
+            redeemUri.Scheme != Uri.UriSchemeHttps || string.IsNullOrWhiteSpace(clientSecret))
         {
             logger.LogError("Parent SSO redemption endpoint or client secret is not configured.");
             return StatusCode(StatusCodes.Status503ServiceUnavailable);
