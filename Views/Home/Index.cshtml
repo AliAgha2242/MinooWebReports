@@ -1,7 +1,7 @@
 @using MinooWebReports.Models
 @{
     ViewData["Title"] = "داشبورد گزارشات";
-    var connections = ViewBag.TestConnections as IReadOnlyList<VahedTejari> ?? [];
+    var connections = ViewBag.Connections as IReadOnlyList<VahedTejari> ?? [];
     var selected = ViewBag.SelectedConnection as VahedTejari;
     var userName = User.Identity?.Name;
     var avatar = !string.IsNullOrWhiteSpace(userName) ? userName[..1].ToUpperInvariant() : "م";
@@ -63,6 +63,10 @@
         {
             <div class="report-message report-message-success" role="status"><span>✓</span>@success</div>
         }
+        @if (ViewBag.ConfigurationError is string configurationError)
+        {
+            <div class="report-message report-message-error" role="alert">@configurationError</div>
+        }
         @if (!ViewData.ModelState.IsValid)
         {
             <div asp-validation-summary="All" class="report-validation-summary"></div>
@@ -102,7 +106,7 @@
                         </form>
                     }
                 </div>
-                <p class="reports-demo-hint"><span>i</span> فهرست فعلی آزمایشی است و در مرحله اتصال به سرویس اطلاعات واحدهای تجاری جایگزین خواهد شد.</p>
+                <p class="reports-demo-hint"><span>i</span> فهرست سرورها مستقیماً از بخش ServersInfo در AppConfig.json خوانده می‌شود.</p>
             </section>
 
             <aside class="report-builder reports-current-card" id="current-connection">
@@ -123,6 +127,7 @@
                         <dt>شماره واحد</dt><dd>@selected.VahedetejariSn</dd>
                         <dt>سرور</dt><dd dir="ltr">@selected.Server</dd>
                         <dt>پایگاه داده</dt><dd dir="ltr">@selected.DataBAset</dd>
+                        @if (!string.IsNullOrWhiteSpace(selected.ServerIp)) { <dt>IP سرور</dt><dd dir="ltr">@selected.ServerIp</dd> }
                     </dl>
                     <form asp-action="Clear" method="post" class="reports-clear-form">
                         @Html.AntiForgeryToken()

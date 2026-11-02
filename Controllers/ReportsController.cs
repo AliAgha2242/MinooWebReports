@@ -9,6 +9,7 @@ public sealed class ReportsController(
     IReportRepository reports,
     IReportExecutionService execution,
     ISelectedConnectionService selectedConnection,
+    IServerDirectoryService serverDirectory,
     IUserReportSettingsService settings,
     ILogger<ReportsController> logger) : Controller
 {
@@ -30,18 +31,23 @@ public sealed class ReportsController(
         if (report is null)
             return NotFound();
 
-        var connection = selectedConnection.Current;
+        var savedConnection = selectedConnection.Current;
+        var connection = savedConnection is null
+            ? null
+            : serverDirectory.GetBySn(savedConnection.VahedetejariSn);
         if (connection is null)
         {
-            TempData["Error"] = "ابتدا باید محل اتصال را انتخاب کنید.";
+            TempData["Error"] = "محل اتصال انتخاب‌شده در AppConfig.json پیدا نشد. لطفاً دوباره انتخاب کنید.";
             return RedirectToAction("Index", "Home");
         }
 
+        await selectedConnection.SelectAsync(connection, cancellationToken);
         await LoadParameterOptionsAsync(report, connection, cancellationToken);
         var preferences = await settings.GetAsync(id, cancellationToken);
         return View(new ReportRunViewModel
         {
             Report = report,
+            SelectedConnection = connection,
             PageSize = Math.Clamp(preferences.PageSize, 10, 200)
         });
     }
@@ -77,13 +83,17 @@ public sealed class ReportsController(
         if (report is null)
             return NotFound();
 
-        var connection = selectedConnection.Current;
+        var savedConnection = selectedConnection.Current;
+        var connection = savedConnection is null
+            ? null
+            : serverDirectory.GetBySn(savedConnection.VahedetejariSn);
         if (connection is null)
         {
-            TempData["Error"] = "محل اتصال فعال نیست. ابتدا یک محل اتصال انتخاب کنید.";
+            TempData["Error"] = "محل اتصال فعال نیست یا در AppConfig.json وجود ندارد. ابتدا یک محل اتصال معتبر انتخاب کنید.";
             return RedirectToAction("Index", "Home");
         }
 
+        await selectedConnection.SelectAsync(connection, cancellationToken);
         var values = submittedValues?.ToDictionary(
             pair => pair.Key,
             pair => string.Join(",", pair.Value ?? []),
@@ -164,6 +174,7 @@ public sealed class ReportsController(
             return View("Result", new ReportResultViewModel
             {
                 Report = report,
+                SelectedConnection = connection,
                 Values = values,
                 Filters = filters,
                 Result = paged,
@@ -199,6 +210,7 @@ public sealed class ReportsController(
             return View("Run", new ReportRunViewModel
             {
                 Report = report,
+                SelectedConnection = connection,
                 Values = values,
                 PageSize = Math.Clamp(pageSize ?? report.PageSize, 10, 200),
                 Error = userMessage

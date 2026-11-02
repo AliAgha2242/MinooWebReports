@@ -1,82 +1,123 @@
 @model MinooWebReports.Models.ReportResultViewModel
 @{
     ViewData["Title"] = "نتیجه " + Model.Report.Name;
-    var visibleColumns = Model.AllColumns.Where(c => !Model.HiddenColumns.Contains(c, StringComparer.OrdinalIgnoreCase)).ToList();
+    var visibleColumns = Model.AllColumns.Where(column => !Model.HiddenColumns.Contains(column, StringComparer.OrdinalIgnoreCase)).ToList();
 }
-<main class="admin-page reports-dashboard">
-    <aside class="admin-sidebar">
+<main class="reports-result-page">
+    <header class="reports-result-header">
         <a class="admin-brand" asp-controller="Home" asp-action="Index"><span class="brand-mark">M<span>•</span></span><span class="brand-copy"><strong>MINOO</strong><span>WEB REPORTS</span></span></a>
-        <div class="admin-sidebar-label">سامانه گزارشات</div>
-        <nav class="admin-menu" aria-label="منوی اصلی">
-            <a class="admin-menu-link" asp-controller="Home" asp-action="Index"><span class="admin-menu-icon">⌂</span><span>داشبورد</span></a>
-            <a class="admin-menu-link active" asp-controller="Reports" asp-action="Index"><span class="admin-menu-icon">▤</span><span>گزارش‌ها</span></a>
-        </nav>
-    </aside>
-    <section class="admin-main">
-        <header class="admin-topbar"><div><span class="admin-breadcrumb">MINOO / REPORTS / RESULT</span><h1>@Model.Report.Name</h1></div><a class="reports-back-link" asp-action="Run" asp-route-id="@Model.Report.Id">ویرایش پارامترها</a></header>
-        <section class="admin-welcome reports-welcome"><div><span class="admin-eyebrow"><span class="status-dot"></span> REPORT RESULT</span><h2>نتیجه اجرای گزارش</h2><p>@Model.TotalRows.ToString("N0") رکورد · صفحه @Model.Page از @Model.TotalPages</p></div><span class="admin-welcome-symbol">R<span>•</span></span></section>
-        <form asp-action="Run" method="post" class="report-builder reports-result-builder">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="id" value="@Model.Report.Id" />
-            <input type="hidden" name="hiddenColumnsSubmitted" value="true" />
-            @foreach (var item in Model.Values) { <input type="hidden" name="values[@item.Key]" value="@item.Value" /> }
-            <div class="reports-grid-toolbar">
-                <div><span class="report-step">GRID SETTINGS</span><h3>فیلتر و تنظیم ستون‌ها</h3></div>
-                @if (Model.Report.NeedsPagination)
-                {
-                    <label>تعداد در صفحه <select name="pageSize" class="reports-input reports-page-size"><option value="10" selected="@(Model.PageSize == 10)">10</option><option value="25" selected="@(Model.PageSize == 25)">25</option><option value="50" selected="@(Model.PageSize == 50)">50</option><option value="100" selected="@(Model.PageSize == 100)">100</option><option value="200" selected="@(Model.PageSize == 200)">200</option></select></label>
-                }
-            </div>
-            <div class="reports-column-visibility">
-                @foreach (var column in Model.AllColumns)
-                {
-                    <label><input type="checkbox" name="hiddenColumns" value="@column" checked="@Model.HiddenColumns.Contains(column, StringComparer.OrdinalIgnoreCase)" /> پنهان‌کردن @column</label>
-                }
-            </div>
-            <div class="reports-grid-filters">
-                @foreach (var column in Model.AllColumns)
-                {
-                    <label>@column <input class="reports-input" name="filters[@column]" value="@(Model.Filters.TryGetValue(column, out var filter) ? filter : "")" placeholder="فیلتر..." /></label>
-                }
-                <label>مرتب‌سازی بر اساس <select name="sortColumn" class="reports-input"><option value="">بدون مرتب‌سازی</option>@foreach (var column in Model.AllColumns) { <option value="@column" selected="@(Model.SortColumn == column)">@column</option> }</select></label>
-                <label class="reports-checkbox"><input type="checkbox" name="sortDescending" value="true" checked="@Model.SortDescending" /> نزولی</label>
-                <input type="hidden" name="sortDescending" value="false" />
-                <button type="submit" class="reports-run-button">اعمال تنظیمات</button>
-            </div>
-            <div class="reports-table-wrap">
-                <table class="reports-data-table">
-                    <thead><tr>@foreach (var column in visibleColumns) { <th>@column</th> }</tr></thead>
-                    <tbody>
-                    @if (Model.Result.Rows.Count == 0)
-                    {
-                        <tr><td colspan="@Math.Max(1, visibleColumns.Count)">داده‌ای برای نمایش وجود ندارد.</td></tr>
-                    }
-                    else
-                    {
-                        @foreach (System.Data.DataRow row in Model.Result.Rows)
-                        {
-                            <tr>@foreach (var column in visibleColumns) { <td>@(row[column] is DBNull ? "—" : Convert.ToString(row[column], System.Globalization.CultureInfo.CurrentCulture))</td> }</tr>
-                        }
-                    }
-                    </tbody>
-                </table>
-            </div>
+        <div class="reports-result-header-title">
+            <span class="admin-breadcrumb">MINOO / REPORTS / RESULT</span>
+            <h1>@Model.Report.Name</h1>
+            <p>خروجی گزارش در صفحه مستقل</p>
+        </div>
+        <a class="reports-back-link" asp-action="Run" asp-route-id="@Model.Report.Id">بازگشت به پارامترها</a>
+    </header>
+
+    <section class="reports-result-context">
+        <div class="reports-result-context-title"><span class="reports-connection-status-dot"></span><strong>محل اجرای گزارش</strong></div>
+        <div><small>واحد تجاری</small><strong>@Model.SelectedConnection.VahedetejariDs</strong></div>
+        <div><small>سرور</small><bdi>@Model.SelectedConnection.Server</bdi></div>
+        <div><small>دیتابیس</small><bdi>@Model.SelectedConnection.DataBAset</bdi></div>
+        @if (!string.IsNullOrWhiteSpace(Model.SelectedConnection.ServerIp))
+        {
+            <div><small>IP سرور</small><bdi>@Model.SelectedConnection.ServerIp</bdi></div>
+        }
+    </section>
+
+    <section class="reports-result-summary">
+        <div><span class="report-step">REPORT OUTPUT</span><h2>نتیجه اجرای گزارش</h2><p>@Model.TotalRows.ToString("N0") رکورد · صفحه @Model.Page از @Model.TotalPages</p></div>
+        <div class="reports-result-summary-stat"><strong>@Model.TotalRows.ToString("N0")</strong><span>تعداد رکوردها</span></div>
+    </section>
+
+    <form asp-action="Run" method="post" class="reports-result-workspace">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.Report.Id" />
+        <input type="hidden" name="hiddenColumnsSubmitted" value="true" />
+        @foreach (var item in Model.Values)
+        {
+            <input type="hidden" name="submittedValues[@item.Key]" value="@item.Value" />
+        }
+
+        <div class="reports-grid-toolbar">
+            <div><span class="report-step">GRID SETTINGS</span><h3>فیلتر و تنظیم ستون‌ها</h3></div>
             @if (Model.Report.NeedsPagination)
             {
-                <div class="reports-pagination">
-                    <span>نمایش @Model.Result.Rows.Count از @Model.TotalRows.ToString("N0") رکورد</span>
-                    <div>
-                        <button type="submit" name="page" value="@(Model.Page - 1)" class="reports-page-button" disabled="@(Model.Page <= 1)">قبلی</button>
-                        <strong>@Model.Page / @Model.TotalPages</strong>
-                        <button type="submit" name="page" value="@(Model.Page + 1)" class="reports-page-button" disabled="@(Model.Page >= Model.TotalPages)">بعدی</button>
-                    </div>
-                </div>
+                <label>تعداد در صفحه
+                    <select name="pageSize" class="reports-input reports-page-size">
+                        <option value="10" selected="@(Model.PageSize == 10)">10</option>
+                        <option value="25" selected="@(Model.PageSize == 25)">25</option>
+                        <option value="50" selected="@(Model.PageSize == 50)">50</option>
+                        <option value="100" selected="@(Model.PageSize == 100)">100</option>
+                        <option value="200" selected="@(Model.PageSize == 200)">200</option>
+                    </select>
+                </label>
             }
-            else
+        </div>
+
+        <div class="reports-column-visibility">
+            @foreach (var column in Model.AllColumns)
             {
-                <div class="reports-pagination"><span>نمایش تمام @Model.TotalRows.ToString("N0") رکورد</span></div>
+                <label><input type="checkbox" name="hiddenColumns" value="@column" checked="@Model.HiddenColumns.Contains(column, StringComparer.OrdinalIgnoreCase)" /> پنهان‌کردن @column</label>
             }
-        </form>
-        <footer class="admin-footer"><span>© @DateTime.Now.Year گروه صنعتی مینو</span><span>MINOO WEB REPORTS</span></footer>
-    </section>
+        </div>
+
+        <div class="reports-grid-filters">
+            @foreach (var column in Model.AllColumns)
+            {
+                <label>@column
+                    <input class="reports-input" name="filters[@column]" value="@(Model.Filters.TryGetValue(column, out var filter) ? filter : "")" placeholder="فیلتر..." />
+                </label>
+            }
+            <label>مرتب‌سازی بر اساس
+                <select name="sortColumn" class="reports-input">
+                    <option value="">بدون مرتب‌سازی</option>
+                    @foreach (var column in Model.AllColumns)
+                    {
+                        <option value="@column" selected="@(Model.SortColumn == column)">@column</option>
+                    }
+                </select>
+            </label>
+            <label class="reports-checkbox"><input type="checkbox" name="sortDescending" value="true" checked="@Model.SortDescending" /> نزولی</label>
+            <input type="hidden" name="sortDescending" value="false" />
+            <button type="submit" class="reports-run-button">اعمال تنظیمات</button>
+        </div>
+
+        <div class="reports-table-wrap reports-result-table-wrap">
+            <table class="reports-data-table">
+                <thead><tr>@foreach (var column in visibleColumns) { <th>@column</th> }</tr></thead>
+                <tbody>
+                @if (Model.Result.Rows.Count == 0)
+                {
+                    <tr><td colspan="@Math.Max(1, visibleColumns.Count)">داده‌ای برای نمایش وجود ندارد.</td></tr>
+                }
+                else
+                {
+                    @foreach (System.Data.DataRow row in Model.Result.Rows)
+                    {
+                        <tr>@foreach (var column in visibleColumns) { <td>@(row[column] is DBNull ? "—" : Convert.ToString(row[column], System.Globalization.CultureInfo.CurrentCulture))</td> }</tr>
+                    }
+                }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.Report.NeedsPagination)
+        {
+            <div class="reports-pagination">
+                <span>نمایش @Model.Result.Rows.Count از @Model.TotalRows.ToString("N0") رکورد</span>
+                <div>
+                    <button type="submit" name="page" value="@(Model.Page - 1)" class="reports-page-button" disabled="@(Model.Page <= 1)">قبلی</button>
+                    <strong>@Model.Page / @Model.TotalPages</strong>
+                    <button type="submit" name="page" value="@(Model.Page + 1)" class="reports-page-button" disabled="@(Model.Page >= Model.TotalPages)">بعدی</button>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="reports-pagination"><span>نمایش تمام @Model.TotalRows.ToString("N0") رکورد</span></div>
+        }
+    </form>
+
+    <footer class="reports-result-footer"><span>© @DateTime.Now.Year گروه صنعتی مینو</span><span>MINOO WEB REPORTS</span></footer>
 </main>
