@@ -1,13 +1,14 @@
 using System.Data;
 using System.Text.RegularExpressions;
+using ClosedXML.Excel;
 using Microsoft.Data.SqlClient;
 using MinooWebReports.Models;
 
 namespace MinooWebReports.Services;
 
 /// <summary>
-/// Executes parameterized SELECT reports with strict row/time limits.
-/// Production SQL credentials must be read-only; ApplicationIntent is not a security boundary.
+/// Executes parameterized SQL reports and reads stored Excel workbooks.
+/// SQL target identities must have SELECT-only permissions; the text gate is defense-in-depth.
 /// </summary>
 public sealed class SqlReportExecutionService(
     IConnectionStringFactory connectionStringFactory,
@@ -23,15 +24,27 @@ public sealed class SqlReportExecutionService(
         "BACKUP", "RESTORE", "BULK", "WAITFOR", "OPENROWSET", "OPENDATASOURCE"
     ];
 
-    public async Task<DataTable> ExecuteSqlAsync(
+    public Task<DataTable> ExecuteAsync(
         ReportDefinition report,
         IReadOnlyDictionary<string, string?> values,
         VahedTejari connection,
         CancellationToken cancellationToken = default)
     {
-        if (!string.Equals(report.SourceType, "Sql", StringComparison.OrdinalIgnoreCase))
-            throw new NotSupportedException("اجرای گزارش‌های Excel در مرحله بعدی فعال می‌شود.");
+        if (string.Equals(report.SourceType, "Sql", StringComparison.OrdinalIgnoreCase))
+            return ExecuteSqlAsync(report, values, connection, cancellationToken);
 
+        if (string.Equals(report.SourceType, "Excel", StringComparison.OrdinalIgnoreCase))
+            return ExecuteExcelAsync(report, values, cancellationToken);
+
+        throw new InvalidOperationException("نوع منبع گزارش پشتیبانی نمی‌شود.");
+    }
+
+    private async Task<DataTable> ExecuteSqlAsync(
+        ReportDefinition report,
+        IReadOnlyDictionary<string, string?> values,
+        VahedTejari connection,
+        CancellationToken cancellationToken)
+    {
         var sql = (report.SqlQuery ?? string.Empty).Trim();
         ValidateReadOnlySelect(sql);
 
@@ -59,15 +72,14 @@ public sealed class SqlReportExecutionService(
                 throw new InvalidOperationException($"نام پارامتر «{parameter.Name}» معتبر نیست.");
 
             values.TryGetValue(parameter.Name, out var rawValue);
+            var sqlParameter = command.Parameters.Add("@" + parameter.Name, GetSqlDbType(parameter.Type));
             if (string.IsNullOrWhiteSpace(rawValue))
             {
-                var emptyParameter = command.Parameters.Add("@" + parameter.Name, GetSqlDbType(parameter.Type));
-                emptyParameter.Value = parameter.Type == "Checkbox" ? false : DBNull.Value;
+                sqlParameter.Value = parameter.Type == "Checkbox" ? false : DBNull.Value;
                 continue;
             }
 
-            command.Parameters.Add("@" + parameter.Name, GetSqlDbType(parameter.Type)).Value =
-                ConvertValue(parameter, rawValue);
+            sqlParameter.Value = ConvertValue(parameter, rawValue);
         }
 
         var table = new DataTable();
@@ -95,28 +107,122 @@ public sealed class SqlReportExecutionService(
         return table;
     }
 
+    private async Task<DataTable> ExecuteExcelAsync(
+        ReportDefinition report,
+        IReadOnlyDictionary<string, string?> values,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var content = report.ExcelContent;
+        if (content is null || content.Length == 0)
+            throw new InvalidOperationException("محتوای فایل Excel برای این گزارش ثبت نشده است.");
+
+        var maxBytes = Math.Clamp(configuration.GetValue("Reports:MaxExcelBytes", 20 * 1024 * 1024),
+            1024 * 1024, 100 * 1024 * 1024);
+        if (content.Length > maxBytes)
+            throw new InvalidOperationException("حجم فایل Excel از سقف مجاز بیشتر است.");
+
+        using var stream = new MemoryStream(content, writable: false);
+        using var workbook = new XLWorkbook(stream);
+        var worksheet = workbook.Worksheets.FirstOrDefault()
+            ?? throw new InvalidOperationException("برگه‌ای در فایل Excel پیدا نشد.");
+        var usedRange = worksheet.RangeUsed();
+
+        var table = new DataTable();
+        if (usedRange is null)
+            return table;
+
+        var firstRow = usedRange.RangeAddress.FirstAddress.RowNumber;
+        var lastRow = usedRange.RangeAddress.LastAddress.RowNumber;
+        var firstColumn = usedRange.RangeAddress.FirstAddress.ColumnNumber;
+        var lastColumn = usedRange.RangeAddress.LastAddress.ColumnNumber;
+
+        for (var column = firstColumn; column <= lastColumn; column++)
+        {
+            var header = worksheet.Cell(firstRow, column).GetString().Trim();
+            if (string.IsNullOrWhiteSpace(header))
+                header = $"Column{column - firstColumn + 1}";
+
+            var uniqueHeader = header;
+            var suffix = 2;
+            while (table.Columns.Contains(uniqueHeader))
+                uniqueHeader = $"{header}_{suffix++}";
+
+            table.Columns.Add(uniqueHeader, typeof(string));
+        }
+
+        foreach (var parameter in report.Parameters)
+        {
+            if (!values.TryGetValue(parameter.Name, out var parameterValue) ||
+                string.IsNullOrWhiteSpace(parameterValue))
+                continue;
+
+            var matchingColumn = table.Columns.Cast<DataColumn>()
+                .FirstOrDefault(column => string.Equals(column.ColumnName, parameter.Name,
+                    StringComparison.OrdinalIgnoreCase));
+
+            if (matchingColumn is null)
+                throw new InvalidOperationException(
+                    $"برای پارامتر «{parameter.DisplayName}» ستونی با نام «{parameter.Name}» در فایل Excel پیدا نشد.");
+        }
+
+        var maxRows = Math.Clamp(configuration.GetValue("Reports:MaxRows", 5000), 100, 50000);
+        for (var rowNumber = firstRow + 1; rowNumber <= lastRow; rowNumber++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var row = table.NewRow();
+            for (var column = firstColumn; column <= lastColumn; column++)
+            {
+                var cell = worksheet.Cell(rowNumber, column);
+                row[column - firstColumn] = cell.IsEmpty() ? DBNull.Value : cell.GetString();
+            }
+
+            var matchesParameters = report.Parameters.All(parameter =>
+            {
+                if (!values.TryGetValue(parameter.Name, out var parameterValue) ||
+                    string.IsNullOrWhiteSpace(parameterValue))
+                    return true;
+
+                var column = table.Columns[parameter.Name]!;
+                var cellValue = Convert.ToString(row[column], System.Globalization.CultureInfo.InvariantCulture);
+                return string.Equals(cellValue, parameterValue, StringComparison.OrdinalIgnoreCase);
+            });
+
+            if (!matchesParameters)
+                continue;
+
+            if (table.Rows.Count >= maxRows)
+                throw new InvalidOperationException(
+                    $"تعداد رکوردهای Excel از سقف مجاز ({maxRows:N0}) بیشتر است.");
+
+            table.Rows.Add(row);
+        }
+
+        return table;
+    }
+
     private static void ValidateReadOnlySelect(string sql)
     {
         if (string.IsNullOrWhiteSpace(sql) ||
             !sql.StartsWith("SELECT", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("فقط دستور SELECT برای گزارش مجاز است.");
 
-        // This deliberately accepts a single, plain SELECT statement only.
-        // Database-level read-only permissions remain mandatory for defense in depth.
+        // Accept a single plain SELECT only. SQL target accounts must still be read-only.
         if (sql.Contains(';') || sql.Contains("--", StringComparison.Ordinal) ||
             sql.Contains("/*", StringComparison.Ordinal) || sql.Contains("*/", StringComparison.Ordinal))
             throw new InvalidOperationException("گزارش باید فقط شامل یک دستور SELECT بدون comment باشد.");
 
         var tokens = Regex.Matches(sql, @"\b[A-Za-z_]+\b")
             .Cast<Match>()
-            .Select(m => m.Value)
+            .Select(match => match.Value)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         var forbidden = ForbiddenTokens.FirstOrDefault(tokens.Contains);
         if (forbidden is not null)
             throw new InvalidOperationException($"عبارت {forbidden} در متن گزارش مجاز نیست.");
 
-        if (tokens.Contains("INTO") || tokens.Contains("OPENXML") || tokens.Contains("OPENDATASOURCE"))
+        if (tokens.Contains("INTO") || tokens.Contains("OPENXML"))
             throw new InvalidOperationException("این نوع عبارت در گزارش فقط‌خواندنی مجاز نیست.");
     }
 
