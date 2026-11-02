@@ -1,6 +1,16 @@
 @model MinooWebReports.Models.ReportRunViewModel
 @using System.Text.Json
 @functions {
+    private static string GetProperty(JsonElement element, params string[] names)
+    {
+        foreach (var property in element.EnumerateObject())
+        {
+            if (names.Contains(property.Name, StringComparer.OrdinalIgnoreCase))
+                return property.Value.ToString();
+        }
+        return "";
+    }
+
     private static List<(string Value, string Label)> ReadOptions(string? json)
     {
         var result = new List<(string Value, string Label)>();
@@ -8,20 +18,28 @@
         try
         {
             using var document = JsonDocument.Parse(json);
-            if (document.RootElement.ValueKind != JsonValueKind.Array) return result;
-            foreach (var item in document.RootElement.EnumerateArray())
+            if (document.RootElement.ValueKind == JsonValueKind.Array)
             {
-                if (item.ValueKind == JsonValueKind.String)
+                foreach (var item in document.RootElement.EnumerateArray())
                 {
-                    var value = item.GetString() ?? "";
-                    result.Add((value, value));
+                    if (item.ValueKind == JsonValueKind.String)
+                    {
+                        var value = item.GetString() ?? "";
+                        result.Add((value, value));
+                    }
+                    else if (item.ValueKind == JsonValueKind.Object)
+                    {
+                        var value = GetProperty(item, "value");
+                        var label = GetProperty(item, "label", "displayName", "text");
+                        if (!string.IsNullOrWhiteSpace(value))
+                            result.Add((value, string.IsNullOrWhiteSpace(label) ? value : label));
+                    }
                 }
-                else if (item.ValueKind == JsonValueKind.Object)
-                {
-                    var value = item.TryGetProperty("value", out var v) ? v.ToString() : "";
-                    var label = item.TryGetProperty("label", out var l) ? l.ToString() : value;
-                    if (!string.IsNullOrWhiteSpace(value)) result.Add((value, label));
-                }
+            }
+            else if (document.RootElement.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var property in document.RootElement.EnumerateObject())
+                    result.Add((property.Name, property.Value.ToString()));
             }
         }
         catch (JsonException) { }
