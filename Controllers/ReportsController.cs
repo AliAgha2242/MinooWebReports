@@ -9,7 +9,8 @@ public sealed class ReportsController(
     IReportRepository reports,
     IReportExecutionService execution,
     ISelectedConnectionService selectedConnection,
-    IUserReportSettingsService settings) : Controller
+    IUserReportSettingsService settings,
+    ILogger<ReportsController> logger) : Controller
 {
     [HttpGet]
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
@@ -102,8 +103,10 @@ public sealed class ReportsController(
             }
 
             var preferences = await settings.GetAsync(id, cancellationToken);
-            var actualPageSize = Math.Clamp(pageSize ?? preferences.PageSize, 10, 200);
             var totalRows = filtered.Rows.Count;
+            var actualPageSize = report.NeedsPagination
+                ? Math.Clamp(pageSize ?? preferences.PageSize, 10, 200)
+                : Math.Max(1, totalRows);
             var totalPages = Math.Max(1, (int)Math.Ceiling(totalRows / (double)actualPageSize));
             page = Math.Clamp(page, 1, totalPages);
 
@@ -145,13 +148,18 @@ public sealed class ReportsController(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            logger.LogError(ex, "Report {ReportId} execution failed.", id);
             Response.StatusCode = StatusCodes.Status400BadRequest;
+            var userMessage = ex is ArgumentException or InvalidOperationException or NotSupportedException
+                ? ex.Message
+                : "در اجرای گزارش خطایی رخ داد. تنظیمات اتصال و لاگ سرور را بررسی کنید.";
+
             return View("Run", new ReportRunViewModel
             {
                 Report = report,
                 Values = values,
                 PageSize = Math.Clamp(pageSize ?? report.PageSize, 10, 200),
-                Error = ex.Message
+                Error = userMessage
             });
         }
     }
