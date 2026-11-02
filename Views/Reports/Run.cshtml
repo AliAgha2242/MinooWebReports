@@ -1,5 +1,33 @@
 @model MinooWebReports.Models.ReportRunViewModel
 @using System.Text.Json
+@functions {
+    private static List<(string Value, string Label)> ReadOptions(string? json)
+    {
+        var result = new List<(string Value, string Label)>();
+        if (string.IsNullOrWhiteSpace(json)) return result;
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            if (document.RootElement.ValueKind != JsonValueKind.Array) return result;
+            foreach (var item in document.RootElement.EnumerateArray())
+            {
+                if (item.ValueKind == JsonValueKind.String)
+                {
+                    var value = item.GetString() ?? "";
+                    result.Add((value, value));
+                }
+                else if (item.ValueKind == JsonValueKind.Object)
+                {
+                    var value = item.TryGetProperty("value", out var v) ? v.ToString() : "";
+                    var label = item.TryGetProperty("label", out var l) ? l.ToString() : value;
+                    if (!string.IsNullOrWhiteSpace(value)) result.Add((value, label));
+                }
+            }
+        }
+        catch (JsonException) { }
+        return result;
+    }
+}
 @{
     ViewData["Title"] = Model.Report.Name;
 }
@@ -35,13 +63,23 @@
                             {
                                 <label class="reports-checkbox"><input id="param-@parameter.Name" type="checkbox" name="values[@parameter.Name]" value="true" checked="@(currentValue == "true")" /> فعال</label>
                             }
-                            else if (parameter.Type == "RadioButton" || parameter.Type == "ListBox")
+                            else if (parameter.Type == "RadioButton")
                             {
-                                var options = new List<string>();
-                                try { if (!string.IsNullOrWhiteSpace(parameter.Options)) options = JsonSerializer.Deserialize<List<string>>(parameter.Options) ?? []; } catch { }
-                                <select id="param-@parameter.Name" name="values[@parameter.Name]" class="reports-input" @(parameter.Type == "ListBox" ? "multiple" : "")>
-                                    <option value="">انتخاب کنید</option>
-                                    @foreach (var option in options) { <option value="@option" selected="@(currentValue == option)">@option</option> }
+                                <div class="reports-radio-list">
+                                    @foreach (var option in ReadOptions(parameter.Options))
+                                    {
+                                        <label class="reports-radio-option"><input type="radio" name="values[@parameter.Name]" value="@option.Value" checked="@(currentValue == option.Value)" /> @option.Label</label>
+                                    }
+                                </div>
+                            }
+                            else if (parameter.Type == "ListBox")
+                            {
+                                var selectedValues = (currentValue ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                                <select id="param-@parameter.Name" name="values[@parameter.Name]" class="reports-input" multiple>
+                                    @foreach (var option in ReadOptions(parameter.Options))
+                                    {
+                                        <option value="@option.Value" selected="@selectedValues.Contains(option.Value, StringComparer.OrdinalIgnoreCase)">@option.Label</option>
+                                    }
                                 </select>
                             }
                             else
