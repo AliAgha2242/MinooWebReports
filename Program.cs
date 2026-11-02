@@ -33,6 +33,8 @@ builder.Services.AddSession(options =>
 builder.Services.AddScoped<ISelectedConnectionService, SelectedConnectionService>();
 builder.Services.AddScoped<IConnectionStringFactory, SqlConnectionStringFactory>();
 builder.Services.AddScoped<IUserReportSettingsService, UserReportSettingsService>();
+builder.Services.AddScoped<IReportRepository, SqlReportRepository>();
+builder.Services.AddScoped<IReportExecutionService, SqlReportExecutionService>();
 
 var app = builder.Build();
 
