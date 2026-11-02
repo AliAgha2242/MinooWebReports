@@ -36,6 +36,7 @@ builder.Services.AddSession(options =>
     options.IdleTimeout = TimeSpan.FromHours(8);
 });
 
+builder.Services.AddSingleton<IServerDirectoryService, ServerDirectoryService>();
 builder.Services.AddScoped<ISelectedConnectionService, SelectedConnectionService>();
 builder.Services.AddScoped<IConnectionStringFactory, SqlConnectionStringFactory>();
 builder.Services.AddScoped<IUserReportSettingsService, UserReportSettingsService>();
