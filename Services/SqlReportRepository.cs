@@ -37,7 +37,7 @@ public sealed class SqlReportRepository(IConfiguration configuration) : IReportR
                 SqlQuery = reader.IsDBNull(3) ? null : reader.GetString(3),
                 ExcelFileName = reader.IsDBNull(4) ? null : reader.GetString(4),
                 NeedsPagination = reader.GetBoolean(5),
-                PageSize = reader.GetInt32(6)
+                PageSize = reader.IsDBNull(6) ? 25 : reader.GetInt32(6)
             });
         }
 
