@@ -103,7 +103,7 @@
                             else
                             {
                                 var inputType = parameter.Type switch { "Number" => "number", "Date" => "date", _ => "text" };
-                                <input id="param-@parameter.Name" name="values[@parameter.Name]" type="@inputType" value="@currentValue" class="reports-input" />
+                                <input id="param-@parameter.Name" name="values[@parameter.Name]" type="@inputType" step="@(parameter.Type == "Number" ? "any" : null)" value="@currentValue" class="reports-input" />
                             }
                         </div>
                     }
