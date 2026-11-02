@@ -1,0 +1,16 @@
+namespace MinooWebReports.Models;
+
+public sealed class ReportParameter
+{
+    public int Id { get; set; }
+    public int ReportDefinitionId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public string Type { get; set; } = "Text";
+    public string? DataSource { get; set; }
+    public string? DisplayNameField { get; set; }
+    public string? ValueField { get; set; }
+    public string? Options { get; set; }
+    public int SortOrder { get; set; }
+    public bool IsRequired { get; set; }
+}
