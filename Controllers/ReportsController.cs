@@ -103,6 +103,7 @@ public sealed class ReportsController(
 
         try
         {
+            await LoadParameterOptionsAsync(report, connection, cancellationToken);
             var raw = await execution.ExecuteAsync(report, values, connection, cancellationToken);
             var validColumns = raw.Columns.Cast<DataColumn>()
                 .Select(column => column.ColumnName).ToArray();
@@ -183,7 +184,18 @@ public sealed class ReportsController(
                 ? ex.Message
                 : "در اجرای گزارش خطایی رخ داد. تنظیمات اتصال و لاگ سرور را بررسی کنید.";
 
-            await LoadParameterOptionsAsync(report, connection, cancellationToken);
+            try
+            {
+                await LoadParameterOptionsAsync(report, connection, cancellationToken);
+            }
+            catch (Exception optionsException) when (optionsException is not OperationCanceledException)
+            {
+                logger.LogWarning(optionsException, "Dynamic options for report {ReportId} could not be loaded.", id);
+                foreach (var parameter in report.Parameters.Where(parameter =>
+                             parameter.Type is "RadioButton" or "ListBox"))
+                    parameter.Options ??= "[]";
+            }
+
             return View("Run", new ReportRunViewModel
             {
                 Report = report,
