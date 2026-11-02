@@ -85,7 +85,17 @@ public sealed class ReportsController(
         }
 
         values ??= new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        var savedPreferences = await settings.GetAsync(id, cancellationToken);
+        var hasSubmittedFilters = Request.Form.Keys.Any(key =>
+            key.StartsWith("filters[", StringComparison.OrdinalIgnoreCase));
         filters ??= new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        if (!hasSubmittedFilters)
+            filters = savedPreferences.ColumnFilters.ToDictionary(
+                pair => pair.Key, pair => (string?)pair.Value, StringComparer.OrdinalIgnoreCase);
+        if (!Request.Form.ContainsKey("sortColumn"))
+            sortColumn = savedPreferences.SortColumn;
+        if (!Request.Form.ContainsKey("sortDescending"))
+            sortDescending = savedPreferences.SortDescending;
 
         try
         {
@@ -117,7 +127,7 @@ public sealed class ReportsController(
                 filtered = view.ToTable();
             }
 
-            var preferences = await settings.GetAsync(id, cancellationToken);
+            var preferences = savedPreferences;
             var totalRows = filtered.Rows.Count;
             var actualPageSize = report.NeedsPagination
                 ? Math.Clamp(pageSize ?? preferences.PageSize, 10, 200)
