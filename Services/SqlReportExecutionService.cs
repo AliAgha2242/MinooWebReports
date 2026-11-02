@@ -44,10 +44,12 @@ public sealed class SqlReportExecutionService(
         VahedTejari connection,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(parameter.DataSource))
+        var sourceSql = parameter.DataSource;
+        if (string.IsNullOrWhiteSpace(sourceSql))
             return parameter.Options;
 
-        ValidateReadOnlySelect(parameter.DataSource.Trim());
+        sourceSql = sourceSql.Trim();
+        ValidateReadOnlySelect(sourceSql);
         var builder = new SqlConnectionStringBuilder(connectionStringFactory.Create(connection))
         {
             ApplicationIntent = ApplicationIntent.ReadOnly,
@@ -56,7 +58,7 @@ public sealed class SqlReportExecutionService(
 
         await using var sqlConnection = new SqlConnection(builder.ConnectionString);
         await sqlConnection.OpenAsync(cancellationToken);
-        await using var command = new SqlCommand(parameter.DataSource, sqlConnection)
+        await using var command = new SqlCommand(sourceSql, sqlConnection)
         {
             CommandTimeout = 15,
             CommandType = CommandType.Text
@@ -252,7 +254,10 @@ public sealed class SqlReportExecutionService(
 
                 var column = table.Columns[parameter.Name]!;
                 var cellValue = Convert.ToString(row[column], System.Globalization.CultureInfo.InvariantCulture);
-                return string.Equals(cellValue, parameterValue, StringComparison.OrdinalIgnoreCase);
+                var requestedValues = parameter.Type == "ListBox"
+                    ? parameterValue.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    : [parameterValue];
+                return requestedValues.Contains(cellValue ?? string.Empty, StringComparer.OrdinalIgnoreCase);
             });
 
             if (!matchesParameters)
