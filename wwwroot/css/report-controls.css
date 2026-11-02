@@ -2,3 +2,9 @@
 .reports-radio-list { display:flex; flex-wrap:wrap; gap:10px 18px; padding:10px 12px; border:1px solid rgba(153,190,219,.16); border-radius:9px; background:rgba(4,19,33,.28); }
 .reports-radio-option { display:inline-flex; align-items:center; gap:7px; color:#bdd0df; font-size:10px; }
 .reports-radio-option input { accent-color:#38b8c5; }
+
+.reports-parameter-count { display:inline-flex; align-items:center; justify-content:center; padding:7px 12px; border:1px solid rgba(56,184,197,.24); border-radius:999px; color:#8fd9df; background:rgba(56,184,197,.08); font-size:11px; white-space:nowrap; }
+.reports-field-hint { display:block; margin-top:7px; color:#8fa8ba; font-size:10px; line-height:1.8; }
+.reports-parameter-field select[multiple] { min-height:112px; padding-block:8px; }
+.reports-parameter-field select[multiple] option { padding:5px 8px; }
+.reports-run-form .reports-parameter-grid { align-items:start; }
