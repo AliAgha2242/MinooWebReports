@@ -294,6 +294,9 @@ public sealed class SqlReportExecutionService(
             if (parameter.Type == "Text" && value.Length > 4000)
                 throw new ArgumentException($"طول مقدار «{parameter.DisplayName}» بیش از حد مجاز است.");
 
+            if (parameter.Type is "Number" or "Date" or "Checkbox")
+                _ = ConvertValue(parameter, value);
+
             if (parameter.Type is "RadioButton" or "ListBox")
             {
                 var allowed = ReadAllowedOptions(parameter.Options);
