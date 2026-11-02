@@ -1,0 +1,57 @@
+@model MinooWebReports.Models.ReportsIndexViewModel
+@{
+    ViewData["Title"] = "گزارش‌ها";
+}
+<main class="admin-page reports-dashboard">
+    <aside class="admin-sidebar">
+        <a class="admin-brand" asp-controller="Home" asp-action="Index">
+            <span class="brand-mark">M<span>•</span></span>
+            <span class="brand-copy"><strong>MINOO</strong><span>WEB REPORTS</span></span>
+        </a>
+        <div class="admin-sidebar-label">سامانه گزارشات</div>
+        <nav class="admin-menu" aria-label="منوی اصلی">
+            <a class="admin-menu-link" asp-controller="Home" asp-action="Index"><span class="admin-menu-icon">⌂</span><span>داشبورد</span></a>
+            <a class="admin-menu-link active" asp-controller="Reports" asp-action="Index"><span class="admin-menu-icon">▤</span><span>گزارش‌ها</span><span class="admin-menu-active-dot"></span></a>
+        </nav>
+    </aside>
+    <section class="admin-main">
+        <header class="admin-topbar">
+            <div><span class="admin-breadcrumb">MINOO / REPORTS</span><h1>فهرست گزارش‌ها</h1></div>
+            <a class="reports-back-link" asp-controller="Home" asp-action="Index">بازگشت به داشبورد</a>
+        </header>
+        <section class="admin-welcome reports-welcome">
+            <div><span class="admin-eyebrow"><span class="status-dot"></span> REPORT CENTER</span><h2>گزارش موردنظر را انتخاب کنید</h2><p>پارامترهای هر گزارش به‌صورت پویا از تنظیمات آن ساخته می‌شوند.</p></div>
+            <span class="admin-welcome-symbol">R<span>•</span></span>
+        </section>
+        @if (TempData["Error"] is string error) { <div class="report-message report-message-error" role="alert">@error</div> }
+        @if (Model.SelectedConnection is null)
+        {
+            <div class="report-message report-message-error">برای اجرای گزارش ابتدا <a asp-controller="Home" asp-action="Index">محل اتصال</a> را انتخاب کنید.</div>
+        }
+        else
+        {
+            <div class="reports-active-strip"><span class="status-dot"></span><span>محل اتصال فعال:</span><strong>@Model.SelectedConnection.VahedetejariDs</strong><bdi>@Model.SelectedConnection.Server / @Model.SelectedConnection.DataBAset</bdi></div>
+        }
+        <section class="report-builder reports-report-list">
+            <div class="report-parameters-heading"><div><span class="report-step">AVAILABLE REPORTS</span><h3>گزارش‌های فعال</h3><p>برای ورود به فرم پارامترها، گزارش را انتخاب کنید.</p></div></div>
+            @if (Model.Reports.Count == 0)
+            {
+                <div class="reports-empty-connection"><span>▤</span><strong>گزارشی برای نمایش وجود ندارد</strong><p>گزارش‌های فعال پس از ثبت در پایگاه داده متادیتا در این قسمت دیده می‌شوند.</p></div>
+            }
+            else
+            {
+                <div class="reports-connection-list">
+                    @foreach (var report in Model.Reports)
+                    {
+                        <a class="reports-connection-card reports-report-card" asp-action="Run" asp-route-id="@report.Id">
+                            <span class="reports-connection-icon">R</span>
+                            <span class="reports-connection-copy"><strong>@report.Name</strong><small>@(report.SourceType == "Sql" ? "گزارش SQL" : "گزارش Excel") <i>·</i> @(report.NeedsPagination ? "دارای صفحه‌بندی" : "بدون صفحه‌بندی")</small></span>
+                            <span class="reports-select-button">انتخاب گزارش <span>←</span></span>
+                        </a>
+                    }
+                </div>
+            }
+        </section>
+        <footer class="admin-footer"><span>© @DateTime.Now.Year گروه صنعتی مینو</span><span>MINOO WEB REPORTS</span></footer>
+    </section>
+</main>
