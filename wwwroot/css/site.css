@@ -1,0 +1,38 @@
+:root {
+    font-family: Tahoma, "Segoe UI", sans-serif;
+    color: #172033;
+    background: #f4f6fa;
+}
+body { background: #f4f6fa; min-height: 100vh; }
+.app-navbar { background: #17243b; box-shadow: 0 4px 18px #17243b18; }
+.app-navbar .navbar-text { color: #c5cede; font-size: .9rem; }
+.hero-panel { display: flex; align-items: center; gap: 18px; padding: 26px 30px; background: #fff; border: 1px solid #e8edf4; border-radius: 18px; }
+.hero-mark, .connection-icon, .empty-icon { display: grid; place-items: center; flex: 0 0 auto; width: 54px; height: 54px; border-radius: 15px; color: #2455a6; background: #eaf1ff; font-weight: 800; letter-spacing: .04em; }
+.eyebrow { color: #6481ad; font-size: .68rem; letter-spacing: .15em; font-weight: 700; margin-bottom: 7px; }
+.surface-card { background: #fff; border: 1px solid #e8edf4; border-radius: 18px; padding: 24px; box-shadow: 0 8px 30px #17243b08; }
+.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 18px; border-bottom: 1px solid #edf0f5; }
+.soft-badge { color: #526d99; background: #eef3fb; border-radius: 30px; padding: 6px 11px; font-size: .75rem; }
+.connection-list { display: grid; gap: 12px; padding-top: 18px; }
+.connection-item { display: flex; align-items: center; gap: 14px; padding: 14px; border: 1px solid #edf0f5; border-radius: 13px; }
+.connection-item:hover { border-color: #c9d8f2; background: #fbfcff; }
+.connection-icon { width: 42px; height: 42px; border-radius: 12px; font-size: .75rem; }
+.connection-info { min-width: 0; flex: 1; display: grid; gap: 5px; }
+.connection-info strong { font-size: .9rem; }
+.connection-info span { color: #7c8798; font-size: .75rem; direction: ltr; text-align: right; overflow-wrap: anywhere; }
+.current-card { min-height: 100%; }
+.status-dot { width: 9px; height: 9px; border-radius: 50%; background: #b8c1ce; }
+.current-unit { padding: 24px 0; }
+.current-unit-label { color: #7b8798; font-size: .78rem; margin-bottom: 8px; }
+.current-unit-name { font-size: 1.15rem; font-weight: 700; margin-bottom: 22px; }
+.connection-details { display: grid; grid-template-columns: 105px 1fr; gap: 12px; margin: 0; font-size: .84rem; }
+.connection-details dt { color: #7b8798; font-weight: 400; }
+.connection-details dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.empty-state { display: grid; justify-items: center; text-align: center; gap: 10px; padding: 44px 12px; color: #7b8798; font-size: .84rem; }
+.empty-state strong { color: #354258; font-size: .95rem; }
+.empty-icon { margin-bottom: 4px; }
+@media (max-width: 575px) {
+    .hero-panel { padding: 20px; }
+    .surface-card { padding: 18px; }
+    .connection-item { flex-wrap: wrap; }
+    .connection-item .btn { width: 100%; }
+}

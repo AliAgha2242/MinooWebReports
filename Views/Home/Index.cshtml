@@ -1,0 +1,93 @@
+@{
+    ViewData["Title"] = "انتخاب محل اتصال";
+    var connections = ViewBag.TestConnections as IReadOnlyList<VahedTejari> ?? [];
+    var selected = ViewBag.SelectedConnection as VahedTejari;
+}
+
+<section class="hero-panel mb-4">
+    <div class="hero-mark">MR</div>
+    <div>
+        <div class="eyebrow">REPORTING WORKSPACE</div>
+        <h1 class="h3 mb-2">انتخاب محل اتصال</h1>
+        <p class="text-secondary mb-0">برای شروع کار، واحد تجاری و پایگاه داده موردنظر را انتخاب کنید.</p>
+    </div>
+</section>
+
+@if (TempData["Success"] is string success)
+{
+    <div class="alert alert-success">@success</div>
+}
+@if (!ViewData.ModelState.IsValid)
+{
+    <div asp-validation-summary="All" class="alert alert-danger"></div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="surface-card h-100">
+            <div class="section-heading">
+                <div>
+                    <h2 class="h5 mb-1">واحدهای تجاری</h2>
+                    <p class="text-secondary small mb-0">اطلاعات فعلاً آزمایشی است.</p>
+                </div>
+                <span class="soft-badge">@connections.Count مورد</span>
+            </div>
+
+            <div class="connection-list">
+                @foreach (var item in connections)
+                {
+                    var isSelected = selected?.VahedetejariSn == item.VahedetejariSn;
+                    <form asp-action="Select" method="post" class="connection-item">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="vahedetejariSn" value="@item.VahedetejariSn" />
+                        <div class="connection-icon">DB</div>
+                        <div class="connection-info">
+                            <strong>@item.VahedetejariDs</strong>
+                            <span>@item.Server / @item.DataBAset</span>
+                        </div>
+                        <button type="submit" class="btn @(isSelected ? "btn-success" : "btn-outline-primary") btn-sm">
+                            @(isSelected ? "انتخاب شده" : "انتخاب")
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="surface-card current-card">
+            <div class="section-heading">
+                <div>
+                    <h2 class="h5 mb-1">محل اتصال فعلی</h2>
+                    <p class="text-secondary small mb-0">این انتخاب در طول نشست کاربر حفظ می‌شود.</p>
+                </div>
+                <span class="status-dot"></span>
+            </div>
+
+            @if (selected is not null)
+            {
+                <div class="current-unit">
+                    <div class="current-unit-label">واحد تجاری انتخاب‌شده</div>
+                    <div class="current-unit-name">@selected.VahedetejariDs</div>
+                    <dl class="connection-details">
+                        <dt>شماره واحد</dt><dd>@selected.VahedetejariSn</dd>
+                        <dt>سرور</dt><dd dir="ltr">@selected.Server</dd>
+                        <dt>پایگاه داده</dt><dd dir="ltr">@selected.DataBAset</dd>
+                    </dl>
+                </div>
+                <form asp-action="Clear" method="post">
+                    @Html.AntiForgeryToken()
+                    <button class="btn btn-light w-100" type="submit">لغو انتخاب</button>
+                </form>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <div class="empty-icon">DB</div>
+                    <strong>هنوز محل اتصالی انتخاب نشده</strong>
+                    <span>یکی از واحدهای تجاری را از فهرست انتخاب کنید.</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>
