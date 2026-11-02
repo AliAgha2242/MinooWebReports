@@ -1,41 +1,80 @@
 # MinooWebReports
 
-ASP.NET Core MVC foundation for a read-only dynamic reporting application.
+ASP.NET Core MVC reporting workspace. The UI follows the shared MinooWebCore visual language.
 
 ## Requirements
 - .NET 10 SDK
 - Redis reachable at `rabbit-srv:6379`
+- SQL Server metadata database containing `dbo.ReportDefinitions` and `dbo.ReportParameters`
+- Read-only SQL Server access for every report target
+
+## Configuration
+
+Redis can be overridden with:
+
+```text
+ConnectionStrings__Redis=rabbit-srv:6379,abortConnect=false
+```
+
+Configure the metadata database connection separately. Do not reuse a report-target connection for metadata unless that is explicitly intended:
+
+```text
+ConnectionStrings__ReportsMetadata=<metadata-database-connection-string>
+```
+
+Report execution limits:
+
+```text
+Reports__CommandTimeoutSeconds=60
+Reports__MaxRows=5000
+```
+
+The report-target connection factory currently uses Windows Integrated Security. Under IIS, the application-pool identity must have the required read permissions on the selected report databases.
 
 ## Run
+
 ```bash
 dotnet restore
 dotnet run
 ```
 
-Redis is configured in `appsettings.json`. Override it with the standard
-`ConnectionStrings__Redis` environment variable when needed.
+## Implemented
 
-## Current foundation
-- Temporary business-unit connection list.
-- Per-browser-session selected SQL Server/database context.
-- SQL Server connection-string factory using Windows Integrated Security.
-- Redis-backed per-user/per-report grid preference service.
-- MVC/Razor UI for selecting the active business unit.
+- Per-session business-unit selection (currently a temporary list in `HomeController`).
+- SQL Server connection-string construction for the selected server/database.
+- Active report catalog from `dbo.ReportDefinitions`.
+- Dynamic parameter form based on `dbo.ReportParameters`:
+  - Text, Number, Date, Checkbox, RadioButton, ListBox.
+  - Radio/list options are read from the parameter's `Options` JSON array (strings or objects with `value` and `label`).
+- Parameterized SQL report execution against the selected business unit.
+- Read-only SELECT-only query gate, command timeout and maximum row count.
+- Read-only results grid with per-column filtering, sorting, column visibility and optional pagination.
+- Per-user/per-report grid preferences stored in Redis.
 
-## Redis report preference key
+## Metadata database
+
+The application expects these columns:
+
+- `ReportDefinitions`: `Id`, `Name`, `SourceType`, `SqlQuery`, `ExcelFileName`, `ExcelContent`, `NeedsPagination`, `PageSize`, `IsDeleted`.
+- `ReportParameters`: `Id`, `ReportDefinitionId`, `Name`, `DisplayName`, `Type`, `DataSource`, `DisplayNameField`, `ValueField`, `Options`, `SortOrder`.
+
+`SourceType=Sql` is currently executable. Excel file ingestion/execution and query-backed `DataSource` option loading are not yet implemented.
+
+## Redis preference key
+
 Authenticated users use:
 
-```
+```text
 MinooWebReports:UserReport:{userId}:{reportId}
 ```
 
-The value is JSON containing page size, hidden columns, column filters, and sorting.
-Until authentication is configured, anonymous sessions are isolated using their
-ASP.NET session identifier. Once authentication is added, the stable user ID claim
-(`NameIdentifier` or `sub`) is used automatically.
+Until authentication is integrated, anonymous sessions are isolated by their ASP.NET session identifier. Preferences include page size, hidden columns, filters and sorting.
 
-## Important
-The selected connection currently stores only server/database metadata in session;
-no database credentials are stored in Redis. Report execution and the dynamic grid
-will be added in the next implementation step. The report SQL must be treated as
-read-only and parameterized; never concatenate user input into SQL.
+## Production security requirements
+
+- Give the report execution identity **SELECT-only permissions** on report databases. The SQL text gate is defense-in-depth, not a substitute for database permissions.
+- Never grant report users write access to target databases.
+- Configure authentication and per-report authorization before exposing this application to end users. Those policies are not yet integrated in this foundation.
+- Store connection strings and credentials in environment variables or a secret store, never in source control.
+- The metadata connection string must be configured as `ConnectionStrings__ReportsMetadata`; it is intentionally not hard-coded.
+- The temporary business-unit list must be replaced by the trusted unit directory before production.
