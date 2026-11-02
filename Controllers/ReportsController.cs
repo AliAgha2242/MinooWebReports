@@ -63,7 +63,7 @@ public sealed class ReportsController(
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Run(
         int id,
-        Dictionary<string, string?>? values,
+        Dictionary<string, string[]>? submittedValues,
         Dictionary<string, string?>? filters,
         string? sortColumn,
         bool sortDescending,
@@ -84,7 +84,11 @@ public sealed class ReportsController(
             return RedirectToAction("Index", "Home");
         }
 
-        values ??= new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        var values = submittedValues?.ToDictionary(
+            pair => pair.Key,
+            pair => string.Join(",", pair.Value ?? []),
+            StringComparer.OrdinalIgnoreCase)
+            ?? new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         var savedPreferences = await settings.GetAsync(id, cancellationToken);
         var hasSubmittedFilters = Request.Form.Keys.Any(key =>
             key.StartsWith("filters[", StringComparison.OrdinalIgnoreCase));
