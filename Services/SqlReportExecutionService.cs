@@ -254,9 +254,9 @@ public sealed class SqlReportExecutionService(
 
                 var column = table.Columns[parameter.Name]!;
                 var cellValue = Convert.ToString(row[column], System.Globalization.CultureInfo.InvariantCulture);
-                var requestedValues = parameter.Type == "ListBox"
+                IEnumerable<string> requestedValues = parameter.Type == "ListBox"
                     ? parameterValue.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                    : [parameterValue];
+                    : new[] { parameterValue };
                 return requestedValues.Contains(cellValue ?? string.Empty, StringComparer.OrdinalIgnoreCase);
             });
 
