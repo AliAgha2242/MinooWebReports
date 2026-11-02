@@ -45,7 +45,7 @@ dotnet run
 - Active report catalog from `dbo.ReportDefinitions`.
 - Dynamic parameter form based on `dbo.ReportParameters`:
   - Text, Number, Date, Checkbox, RadioButton, ListBox.
-  - Radio/list options are read from the parameter's `Options` JSON array (strings or objects with `value` and `label`).
+  - Radio/list options can be static JSON (`Options`) or loaded from a read-only `DataSource` SELECT query using `ValueField` and `DisplayNameField`.
 - Parameterized SQL report execution against the selected business unit.
 - Read-only SELECT-only query gate, command timeout and maximum row count.
 - Read-only results grid with per-column filtering, sorting, column visibility and optional pagination.
