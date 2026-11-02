@@ -78,7 +78,7 @@ public sealed class MinooConfiguration : IMinooConfiguration, IDisposable
             foreach (var part in key.Split(':', StringSplitOptions.RemoveEmptyEntries))
             {
                 if (current.ValueKind != JsonValueKind.Object ||
-                    !current.TryGetProperty(part, out current))
+                    !TryGetPropertyIgnoreCase(current, part, out current))
                     throw new KeyNotFoundException($"کلید «{key}» در فایل تنظیمات پیدا نشد.");
             }
 
@@ -90,7 +90,7 @@ public sealed class MinooConfiguration : IMinooConfiguration, IDisposable
     {
         lock (_sync)
         {
-            if (!_document.RootElement.TryGetProperty("ServersInfo", out var servers) ||
+            if (!TryGetPropertyIgnoreCase(_document.RootElement, "ServersInfo", out var servers) ||
                 servers.ValueKind != JsonValueKind.Array)
                 throw new InvalidOperationException("بخش ServersInfo در AppConfig.json وجود ندارد یا معتبر نیست.");
 
@@ -103,7 +103,7 @@ public sealed class MinooConfiguration : IMinooConfiguration, IDisposable
                     DatabaseName = ReadString(item, "databaseName", "DatabaseName"),
                     VahedeTejariSN = ReadDecimal(item, "VahedeTejariSN"),
                     ServerIp = ReadString(item, "Ip", "ServerIp"),
-                    VahedetejariDs = ReadString(item, "VahedetejariDs", "VahedeTejariDs", "BusinessUnitName", "Name")
+                    VahedetejariDs = ReadString(item, "VahedetejariDs", "VahedeTejariDs", "VahedeTejariDS", "VahedetejariDS", "VahedeTejariName", "BusinessUnitName", "UnitName", "Name")
                 };
 
                 if (server.VahedeTejariSN > 0 &&
@@ -119,17 +119,35 @@ public sealed class MinooConfiguration : IMinooConfiguration, IDisposable
         }
     }
 
+    private static bool TryGetPropertyIgnoreCase(JsonElement item, string name, out JsonElement value)
+    {
+        if (item.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var property in item.EnumerateObject())
+            {
+                if (string.Equals(property.Name, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    value = property.Value;
+                    return true;
+                }
+            }
+        }
+
+        value = default;
+        return false;
+    }
+
     private static string ReadString(JsonElement item, params string[] names)
     {
         foreach (var name in names)
-            if (item.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String)
+            if (TryGetPropertyIgnoreCase(item, name, out var value) && value.ValueKind == JsonValueKind.String)
                 return value.GetString()?.Trim() ?? string.Empty;
         return string.Empty;
     }
 
     private static decimal ReadDecimal(JsonElement item, string name)
     {
-        if (!item.TryGetProperty(name, out var value)) return 0;
+        if (!TryGetPropertyIgnoreCase(item, name, out var value)) return 0;
         if (value.ValueKind == JsonValueKind.Number && value.TryGetDecimal(out var number)) return number;
         return decimal.TryParse(value.ToString(), System.Globalization.NumberStyles.Number,
             System.Globalization.CultureInfo.InvariantCulture, out number) ? number : 0;
