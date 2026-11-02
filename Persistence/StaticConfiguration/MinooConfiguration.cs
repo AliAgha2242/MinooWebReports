@@ -25,32 +25,19 @@ public sealed class ServerInfo
 public sealed class MinooConfiguration : IMinooConfiguration, IDisposable
 {
     private readonly object _sync = new();
-    private readonly FileSystemWatcher _watcher;
-    private JsonDocument _document;
+    private FileSystemWatcher? _watcher;
+    private JsonDocument _document = null!;
+    private string _filePath = string.Empty;
 
     public MinooConfiguration(string? filePath = null, string fileName = "AppConfig.json")
     {
-        var resolvedPath = string.IsNullOrWhiteSpace(filePath)
-            ? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName)
-            : Path.GetFullPath(filePath);
-
-        if (!File.Exists(resolvedPath))
-            throw new FileNotFoundException($"فایل تنظیمات مینو پیدا نشد: {resolvedPath}", resolvedPath);
-
-        FilePath = resolvedPath;
-        _document = JsonDocument.Parse(File.ReadAllText(FilePath));
-
-        _watcher = new FileSystemWatcher(Path.GetDirectoryName(FilePath)!, Path.GetFileName(FilePath))
-        {
-            NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName,
-            EnableRaisingEvents = true
-        };
-        _watcher.Changed += (_, _) => ReloadSafely();
-        _watcher.Created += (_, _) => ReloadSafely();
-        _watcher.Renamed += (_, _) => ReloadSafely();
+        Load(filePath, fileName);
     }
 
-    private string FilePath { get; }
+    private string FilePath
+    {
+        get { lock (_sync) return _filePath; }
+    }
 
     public void Load(string? filePath = null, string fileName = "AppConfig.json")
     {
@@ -64,8 +51,20 @@ public sealed class MinooConfiguration : IMinooConfiguration, IDisposable
         var next = JsonDocument.Parse(File.ReadAllText(path));
         lock (_sync)
         {
-            _document.Dispose();
+            _document?.Dispose();
             _document = next;
+            _filePath = path;
+
+            _watcher?.Dispose();
+            var watcher = new FileSystemWatcher(Path.GetDirectoryName(path)!, Path.GetFileName(path))
+            {
+                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName
+            };
+            watcher.Changed += (_, _) => ReloadSafely();
+            watcher.Created += (_, _) => ReloadSafely();
+            watcher.Renamed += (_, _) => ReloadSafely();
+            watcher.EnableRaisingEvents = true;
+            _watcher = watcher;
         }
     }
 
@@ -171,7 +170,10 @@ public sealed class MinooConfiguration : IMinooConfiguration, IDisposable
 
     public void Dispose()
     {
-        _watcher.Dispose();
-        lock (_sync) _document.Dispose();
+        lock (_sync)
+        {
+            _watcher?.Dispose();
+            _document.Dispose();
+        }
     }
 }
