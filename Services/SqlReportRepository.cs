@@ -50,7 +50,7 @@ public sealed class SqlReportRepository(IConfiguration configuration) : IReportR
     {
         const string sql = """
             SELECT Id, Name, SourceType, SqlQuery, ExcelFileName,
-                   NeedsPagination, PageSize
+                   NeedsPagination, PageSize, ExcelContent
             FROM dbo.ReportDefinitions
             WHERE Id = @Id AND IsDeleted = 0;
             """;
@@ -73,7 +73,13 @@ public sealed class SqlReportRepository(IConfiguration configuration) : IReportR
                     SqlQuery = reader.IsDBNull(3) ? null : reader.GetString(3),
                     ExcelFileName = reader.IsDBNull(4) ? null : reader.GetString(4),
                     NeedsPagination = reader.GetBoolean(5),
-                    PageSize = reader.IsDBNull(6) ? 25 : reader.GetInt32(6)
+                    PageSize = reader.IsDBNull(6) ? 25 : reader.GetInt32(6),
+                    ExcelContent = reader.IsDBNull(7) ? null : reader.GetValue(7) switch
+                    {
+                        byte[] bytes => bytes,
+                        string base64 => Convert.FromBase64String(base64),
+                        _ => throw new InvalidOperationException("نوع محتوای فایل Excel در دیتابیس پشتیبانی نمی‌شود.")
+                    }
                 };
             }
         }
