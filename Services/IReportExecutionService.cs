@@ -10,4 +10,9 @@ public interface IReportExecutionService
         IReadOnlyDictionary<string, string?> values,
         VahedTejari connection,
         CancellationToken cancellationToken = default);
+
+    Task<string?> LoadParameterOptionsJsonAsync(
+        ReportParameter parameter,
+        VahedTejari connection,
+        CancellationToken cancellationToken = default);
 }
