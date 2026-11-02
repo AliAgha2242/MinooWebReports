@@ -50,7 +50,8 @@ public sealed class SqlReportRepository(IConfiguration configuration) : IReportR
     {
         const string sql = """
             SELECT Id, Name, SourceType, SqlQuery, ExcelFileName,
-                   NeedsPagination, PageSize, ExcelContent
+                   NeedsPagination, PageSize,
+                   CASE WHEN SourceType = 'Excel' THEN ExcelContent ELSE NULL END AS ExcelContent
             FROM dbo.ReportDefinitions
             WHERE Id = @Id AND IsDeleted = 0;
             """;
