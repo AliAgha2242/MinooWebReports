@@ -30,9 +30,9 @@ public sealed class SsoController(
         var redeemUrl = configuration["Sso:Parent:RedeemUrl"];
         var clientSecret = configuration["Sso:Parent:ClientSecret"];
         if (!Uri.TryCreate(redeemUrl, UriKind.Absolute, out var redeemUri) ||
-            redeemUri.Scheme != Uri.UriSchemeHttps || string.IsNullOrWhiteSpace(clientSecret))
+            (redeemUri.Scheme != Uri.UriSchemeHttp && redeemUri.Scheme != Uri.UriSchemeHttps) || string.IsNullOrWhiteSpace(clientSecret))
         {
-            logger.LogError("Parent SSO redemption endpoint or client secret is not configured.");
+            logger.LogError("Parent SSO redemption endpoint must be an absolute HTTP or HTTPS URL and the client secret must be configured.");
             return StatusCode(StatusCodes.Status503ServiceUnavailable);
         }
 
