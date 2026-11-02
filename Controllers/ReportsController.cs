@@ -30,18 +30,33 @@ public sealed class ReportsController(
         if (report is null)
             return NotFound();
 
-        if (selectedConnection.Current is null)
+        var connection = selectedConnection.Current;
+        if (connection is null)
         {
             TempData["Error"] = "ابتدا باید محل اتصال را انتخاب کنید.";
             return RedirectToAction("Index", "Home");
         }
 
+        await LoadParameterOptionsAsync(report, connection, cancellationToken);
         var preferences = await settings.GetAsync(id, cancellationToken);
         return View(new ReportRunViewModel
         {
             Report = report,
             PageSize = Math.Clamp(preferences.PageSize, 10, 200)
         });
+    }
+
+    private async Task LoadParameterOptionsAsync(
+        ReportDefinition report,
+        VahedTejari connection,
+        CancellationToken cancellationToken)
+    {
+        foreach (var parameter in report.Parameters.Where(parameter =>
+                     parameter.Type is "RadioButton" or "ListBox"))
+        {
+            parameter.Options = await execution.LoadParameterOptionsJsonAsync(
+                parameter, connection, cancellationToken);
+        }
     }
 
     [HttpPost]
@@ -154,6 +169,7 @@ public sealed class ReportsController(
                 ? ex.Message
                 : "در اجرای گزارش خطایی رخ داد. تنظیمات اتصال و لاگ سرور را بررسی کنید.";
 
+            await LoadParameterOptionsAsync(report, connection, cancellationToken);
             return View("Run", new ReportRunViewModel
             {
                 Report = report,
