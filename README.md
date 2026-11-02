@@ -30,7 +30,7 @@ Reports__MaxRows=5000
 Reports__MaxExcelBytes=20971520
 ```
 
-The report-target connection factory currently uses Windows Integrated Security. Under IIS, the application-pool identity must have the required read permissions on the selected report databases.
+The report-target connection factory currently uses Windows Integrated Security. Under IIS, the application-pool identity must have the required read permissions on the selected report databases.\n\nThe shared Minoo server configuration file must be available beside the published application as `AppConfig.json` (or set `MinooConfiguration__FilePath` to its full path). The file must contain a `ServersInfo` array with `ServerName` (or `Ip`), `databaseName`, and `VahedeTejariSN`. An optional business-unit display name is read from `VahedetejariDs`, `VahedeTejariDs`, `VahedeTejariDS`, `VahedeTejariName`, `BusinessUnitName`, `UnitName`, or `Name`. The configuration file is environment-specific and must not be committed with secrets.
 
 ## Run
 
@@ -41,11 +41,15 @@ dotnet run
 
 ## Implemented
 
-- Per-session business-unit selection (currently a temporary list in `HomeController`).
+- Per-session business-unit selection from `ServersInfo` in the shared Minoo `AppConfig.json` configuration.
+- Server configuration is loaded through the Reports integration of `MinooConfiguration` and automatically reloaded when the file changes.
+- SQL connection strings are generated from the selected configured server and database; client-submitted server/database values are never trusted.
+- The report execution screen displays the selected business unit, server and database, with a loading overlay during execution.
+- Report output is rendered in a dedicated full-page workspace, separate from parameter entry.
 - SQL Server connection-string construction for the selected server/database.
 - Active report catalog from `dbo.ReportDefinitions`.
 - Dynamic parameter form based on `dbo.ReportParameters`:
-  - Text, Number, Date, Checkbox, RadioButton, ListBox.
+  - Text, Number, Date, Time, DateTime, Checkbox, RadioButton, ListBox, ComboBox.
   - Radio/list options can be static JSON (`Options`) or loaded from a read-only `DataSource` SELECT query using `ValueField` and `DisplayNameField`.
 - Parameterized SQL report execution against the selected business unit.
 - Read-only SELECT-only query gate, command timeout and maximum row count.
@@ -78,4 +82,4 @@ Until authentication is integrated, anonymous sessions are isolated by their ASP
 - Configure authentication and per-report authorization before exposing this application to end users. Those policies are not yet integrated in this foundation.
 - Store connection strings and credentials in environment variables or a secret store, never in source control.
 - The metadata connection string must be configured as `ConnectionStrings__ReportsMetadata`; it is intentionally not hard-coded.
-- The temporary business-unit list must be replaced by the trusted unit directory before production.
+- The Minoo `AppConfig.json` server directory must be present and maintained in each deployment environment.
