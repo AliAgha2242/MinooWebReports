@@ -1,0 +1,4 @@
+
+.reports-radio-list { display:flex; flex-wrap:wrap; gap:10px 18px; padding:10px 12px; border:1px solid rgba(153,190,219,.16); border-radius:9px; background:rgba(4,19,33,.28); }
+.reports-radio-option { display:inline-flex; align-items:center; gap:7px; color:#bdd0df; font-size:10px; }
+.reports-radio-option input { accent-color:#38b8c5; }
