@@ -250,8 +250,10 @@ public sealed class SqlReportExecutionService(
 
             var matchesParameters = report.Parameters.All(parameter =>
             {
-                if (!values.TryGetValue(parameter.Name, out var parameterValue) ||
-                    string.IsNullOrWhiteSpace(parameterValue))
+                values.TryGetValue(parameter.Name, out var parameterValue);
+                if (parameter.Type == "Checkbox" && string.IsNullOrWhiteSpace(parameterValue))
+                    parameterValue = "false";
+                if (string.IsNullOrWhiteSpace(parameterValue))
                     return true;
 
                 var column = table.Columns[parameter.Name]!;
