@@ -10,15 +10,22 @@ public sealed class CompanyAppLocationService(
     IMinooConfiguration minooConfiguration) : ICompanyAppLocationService
 {
     private const string AccessSql = """
-        SELECT DISTINCT p.VahedeTejariSN, p.VahedeTejariDs
-        FROM LocUser AS lu
-        INNER JOIN CompAppLocation AS cal ON cal.CompAppLocationKeyID = lu.CompAppLocationKeyID
-        INNER JOIN CompanyApp AS ca ON ca.CompanyAppKeyID = cal.CompanyAppKeyID
-        INNER JOIN Application AS a ON a.ApplicationKeyID = ca.ApplicationKeyID
-        INNER JOIN Company AS c ON c.CompanyKeyID = ca.CompanyKeyID
-        INNER JOIN paVahedeTejari AS p ON p.CompanyID = c.CompanyID
-        INNER JOIN Users AS u ON u.UsersKeyID = lu.UsersKeyID
-        WHERE u.UserCode = @UserCode AND a.ApplicationID = '5';
+        SELECT DISTINCT paVahedeTejari.VahedeTejariSN, paVahedeTejari.VahedeTejariDs
+        FROM LocUser
+        INNER JOIN CompAppLocation
+            ON CompAppLocation.CompAppLocationKeyID = LocUser.CompAppLocationKeyID
+        INNER JOIN CompanyApp
+            ON CompanyApp.CompanyAppKeyID = CompAppLocation.CompanyAppKeyID
+        INNER JOIN Application
+            ON Application.ApplicationKeyID = CompanyApp.ApplicationKeyID
+        INNER JOIN Company
+            ON Company.CompanyKeyID = CompanyApp.CompanyKeyID
+        INNER JOIN paVahedeTejari
+            ON paVahedeTejari.CompanyID = Company.CompanyID
+        WHERE LocUser.UsersKeyID = (
+            SELECT UsersKeyID FROM Users WHERE UserCode = @UserCode
+        )
+          AND ApplicationID = '5';
         """;
 
     public async Task<IReadOnlyList<VahedTejari>> GetAllLocationAsync(
@@ -46,7 +53,7 @@ public sealed class CompanyAppLocationService(
             CommandType = CommandType.Text,
             CommandTimeout = 30
         };
-        command.Parameters.Add("@UserCode", SqlDbType.NVarChar, 50).Value = user.UserCode.Trim();
+        command.Parameters.Add("@UserCode", SqlDbType.NVarChar, 100).Value = user.UserCode.Trim();
 
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         var snOrdinal = reader.GetOrdinal("VahedeTejariSN");
@@ -62,7 +69,8 @@ public sealed class CompanyAppLocationService(
 
             var name = await reader.IsDBNullAsync(nameOrdinal, cancellationToken)
                 ? string.Empty
-                : reader.GetString(nameOrdinal).Trim();
+                : Convert.ToString(reader.GetValue(nameOrdinal), System.Globalization.CultureInfo.CurrentCulture)?.Trim()
+                    ?? string.Empty;
 
             result.Add(new VahedTejari
             {
