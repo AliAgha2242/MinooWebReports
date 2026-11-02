@@ -39,6 +39,72 @@ public sealed class SqlReportExecutionService(
         throw new InvalidOperationException("نوع منبع گزارش پشتیبانی نمی‌شود.");
     }
 
+    public async Task<string?> LoadParameterOptionsJsonAsync(
+        ReportParameter parameter,
+        VahedTejari connection,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(parameter.DataSource))
+            return parameter.Options;
+
+        ValidateReadOnlySelect(parameter.DataSource.Trim());
+        var builder = new SqlConnectionStringBuilder(connectionStringFactory.Create(connection))
+        {
+            ApplicationIntent = ApplicationIntent.ReadOnly,
+            ConnectTimeout = 15
+        };
+
+        await using var sqlConnection = new SqlConnection(builder.ConnectionString);
+        await sqlConnection.OpenAsync(cancellationToken);
+        await using var command = new SqlCommand(parameter.DataSource, sqlConnection)
+        {
+            CommandTimeout = 15,
+            CommandType = CommandType.Text
+        };
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+        if (reader.FieldCount == 0)
+            return "[]";
+
+        var valueField = string.IsNullOrWhiteSpace(parameter.ValueField)
+            ? reader.GetName(0)
+            : parameter.ValueField;
+        var displayField = string.IsNullOrWhiteSpace(parameter.DisplayNameField)
+            ? valueField
+            : parameter.DisplayNameField;
+
+        int valueOrdinal;
+        int displayOrdinal;
+        try
+        {
+            valueOrdinal = reader.GetOrdinal(valueField);
+            displayOrdinal = reader.GetOrdinal(displayField);
+        }
+        catch (IndexOutOfRangeException)
+        {
+            throw new InvalidOperationException(
+                $"ستون‌های ValueField یا DisplayNameField برای پارامتر «{parameter.DisplayName}» در منبع داده پیدا نشدند.");
+        }
+
+        var options = new List<object>();
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            if (options.Count >= 2000)
+                throw new InvalidOperationException("تعداد گزینه‌های پارامتر از سقف مجاز ۲۰۰۰ مورد بیشتر است.");
+
+            var value = await reader.IsDBNullAsync(valueOrdinal, cancellationToken)
+                ? string.Empty
+                : Convert.ToString(reader.GetValue(valueOrdinal), System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
+            var label = await reader.IsDBNullAsync(displayOrdinal, cancellationToken)
+                ? value
+                : Convert.ToString(reader.GetValue(displayOrdinal), System.Globalization.CultureInfo.CurrentCulture) ?? value;
+
+            options.Add(new { value, label });
+        }
+
+        return System.Text.Json.JsonSerializer.Serialize(options);
+    }
+
     private async Task<DataTable> ExecuteSqlAsync(
         ReportDefinition report,
         IReadOnlyDictionary<string, string?> values,
