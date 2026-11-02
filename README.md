@@ -58,7 +58,7 @@ dotnet run
 
 ## Implemented
 
-- Per-session business-unit selection from `ServersInfo` in the shared Minoo `AppConfig.json` configuration.
+- Per-session selection from the current user's authorized business units; server and database details are resolved from `ServersInfo` in the shared Minoo `AppConfig.json` configuration.
 - Server configuration is loaded through the Reports integration of `MinooConfiguration` and automatically reloaded when the file changes.
 - SQL connection strings are generated from the selected configured server and database; client-submitted server/database values are never trusted.
 - The report execution screen displays the selected business unit, server and database, with a loading overlay during execution.
