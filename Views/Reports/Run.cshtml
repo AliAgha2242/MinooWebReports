@@ -1,0 +1,60 @@
+@model MinooWebReports.Models.ReportRunViewModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = Model.Report.Name;
+}
+<main class="admin-page reports-dashboard">
+    <aside class="admin-sidebar">
+        <a class="admin-brand" asp-controller="Home" asp-action="Index"><span class="brand-mark">M<span>•</span></span><span class="brand-copy"><strong>MINOO</strong><span>WEB REPORTS</span></span></a>
+        <div class="admin-sidebar-label">سامانه گزارشات</div>
+        <nav class="admin-menu" aria-label="منوی اصلی">
+            <a class="admin-menu-link" asp-controller="Home" asp-action="Index"><span class="admin-menu-icon">⌂</span><span>داشبورد</span></a>
+            <a class="admin-menu-link active" asp-controller="Reports" asp-action="Index"><span class="admin-menu-icon">▤</span><span>گزارش‌ها</span></a>
+        </nav>
+    </aside>
+    <section class="admin-main">
+        <header class="admin-topbar"><div><span class="admin-breadcrumb">MINOO / REPORTS / PARAMETERS</span><h1>@Model.Report.Name</h1></div><a class="reports-back-link" asp-action="Index">بازگشت به گزارش‌ها</a></header>
+        <section class="admin-welcome reports-welcome"><div><span class="admin-eyebrow"><span class="status-dot"></span> REPORT PARAMETERS</span><h2>تنظیم پارامترهای گزارش</h2><p>مقادیر موردنیاز را وارد کنید و گزارش را اجرا کنید.</p></div><span class="admin-welcome-symbol">R<span>•</span></span></section>
+        @if (!string.IsNullOrWhiteSpace(Model.Error)) { <div class="report-message report-message-error" role="alert">@Model.Error</div> }
+        <section class="report-builder">
+            <form asp-action="Run" method="post" class="reports-run-form">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Report.Id" />
+                <div class="report-parameters-heading"><div><span class="report-step">STEP 02 · PARAMETERS</span><h3>پارامترهای ورودی</h3><p>فیلدها مطابق تعریف همین گزارش ساخته شده‌اند.</p></div></div>
+                @if (Model.Report.Parameters.Count == 0)
+                {
+                    <p class="reports-demo-hint">این گزارش پارامتر ورودی ندارد.</p>
+                }
+                <div class="reports-parameter-grid">
+                    @foreach (var parameter in Model.Report.Parameters)
+                    {
+                        var currentValue = Model.Values.TryGetValue(parameter.Name, out var v) ? v : "";
+                        <div class="reports-parameter-field">
+                            <label for="param-@parameter.Name">@parameter.DisplayName</label>
+                            @if (parameter.Type == "Checkbox")
+                            {
+                                <label class="reports-checkbox"><input id="param-@parameter.Name" type="checkbox" name="values[@parameter.Name]" value="true" checked="@(currentValue == "true")" /> فعال</label>
+                            }
+                            else if (parameter.Type == "RadioButton" || parameter.Type == "ListBox")
+                            {
+                                var options = new List<string>();
+                                try { if (!string.IsNullOrWhiteSpace(parameter.Options)) options = JsonSerializer.Deserialize<List<string>>(parameter.Options) ?? []; } catch { }
+                                <select id="param-@parameter.Name" name="values[@parameter.Name]" class="reports-input" @(parameter.Type == "ListBox" ? "multiple" : "")>
+                                    <option value="">انتخاب کنید</option>
+                                    @foreach (var option in options) { <option value="@option" selected="@(currentValue == option)">@option</option> }
+                                </select>
+                            }
+                            else
+                            {
+                                var inputType = parameter.Type switch { "Number" => "number", "Date" => "date", _ => "text" };
+                                <input id="param-@parameter.Name" name="values[@parameter.Name]" type="@inputType" value="@currentValue" class="reports-input" />
+                            }
+                        </div>
+                    }
+                </div>
+                <div class="reports-run-actions"><a asp-action="Index" class="reports-clear-button">انصراف</a><button type="submit" class="reports-run-button">اجرای گزارش <span>←</span></button></div>
+            </form>
+        </section>
+        <footer class="admin-footer"><span>© @DateTime.Now.Year گروه صنعتی مینو</span><span>MINOO WEB REPORTS</span></footer>
+    </section>
+</main>
