@@ -139,7 +139,7 @@ public sealed class SqlReportExecutionService(
         foreach (var parameter in report.Parameters)
         {
             values.TryGetValue(parameter.Name, out var rawValue);
-            var sqlParameter = command.Parameters.Add("@" + parameter.Name, GetSqlDbType(parameter.Type));
+            var sqlParameter = command.Parameters.Add("@" + parameter.Name, GetSqlDbType(parameter));
             if (string.IsNullOrWhiteSpace(rawValue))
             {
                 sqlParameter.Value = parameter.Type == "Checkbox" ? false : DBNull.Value;
@@ -285,7 +285,7 @@ public sealed class SqlReportExecutionService(
         {
             if (!ParameterNameRegex.IsMatch(parameter.Name))
                 throw new InvalidOperationException($"نام پارامتر «{parameter.Name}» معتبر نیست.");
-            if (parameter.Type is not ("Text" or "Number" or "Date" or "Checkbox" or "RadioButton" or "ListBox"))
+            if (parameter.Type is not ("Text" or "Number" or "Date" or "Time" or "DateTime" or "Checkbox" or "RadioButton" or "ListBox" or "ComboBox"))
                 throw new InvalidOperationException($"نوع پارامتر «{parameter.Type}» پشتیبانی نمی‌شود.");
 
             if (!values.TryGetValue(parameter.Name, out var value) || string.IsNullOrWhiteSpace(value))
@@ -294,10 +294,10 @@ public sealed class SqlReportExecutionService(
             if (parameter.Type == "Text" && value.Length > 4000)
                 throw new ArgumentException($"طول مقدار «{parameter.DisplayName}» بیش از حد مجاز است.");
 
-            if (parameter.Type is "Number" or "Date" or "Checkbox")
+            if (parameter.Type is "Number" or "Date" or "Time" or "DateTime" or "Checkbox")
                 _ = ConvertValue(parameter, value);
 
-            if (parameter.Type is "RadioButton" or "ListBox")
+            if (parameter.Type is "RadioButton" or "ListBox" or "ComboBox")
             {
                 var allowed = ReadAllowedOptions(parameter.Options);
                 var submitted = parameter.Type == "ListBox"
@@ -378,13 +378,38 @@ public sealed class SqlReportExecutionService(
             throw new InvalidOperationException("این نوع عبارت در گزارش فقط‌خواندنی مجاز نیست.");
     }
 
-    private static SqlDbType GetSqlDbType(string type) => type switch
+    private static SqlDbType GetSqlDbType(ReportParameter parameter) => parameter.Type switch
     {
         "Number" => SqlDbType.Decimal,
         "Date" => SqlDbType.Date,
+        "Time" => SqlDbType.Time,
+        "DateTime" => SqlDbType.DateTime2,
         "Checkbox" => SqlDbType.Bit,
         _ => SqlDbType.NVarChar
     };
+
+    private static bool TryParseParameterDate(ReportParameter parameter, string value, out DateTime result)
+    {
+        var format = string.IsNullOrWhiteSpace(parameter.DateFormat) ? "yyyy-MM-dd" : parameter.DateFormat;
+        var culture = (System.Globalization.CultureInfo)System.Globalization.CultureInfo.InvariantCulture.Clone();
+        if (string.Equals(parameter.CalendarType, "Persian", StringComparison.OrdinalIgnoreCase))
+            culture.DateTimeFormat.Calendar = new System.Globalization.PersianCalendar();
+        return DateTime.TryParseExact(value.Trim(), new[] { format, "yyyyMMdd", "yyyy-MM-dd", "yyyy/MM/dd" },
+            culture, System.Globalization.DateTimeStyles.None, out result);
+    }
+
+    private static bool TryParseParameterDateTime(ReportParameter parameter, string value, out DateTime result)
+    {
+        var separator = parameter.DateTimeSeparator ?? " ";
+        var dateFormat = string.IsNullOrWhiteSpace(parameter.DateFormat) ? "yyyy-MM-dd" : parameter.DateFormat;
+        var timeFormat = string.IsNullOrWhiteSpace(parameter.TimeFormat) ? "HH:mm:ss" : parameter.TimeFormat;
+        var formats = new[] { dateFormat + separator + timeFormat, "yyyy-MM-ddTHH:mm", "yyyy-MM-ddTHH:mm:ss" };
+        var culture = (System.Globalization.CultureInfo)System.Globalization.CultureInfo.InvariantCulture.Clone();
+        if (string.Equals(parameter.CalendarType, "Persian", StringComparison.OrdinalIgnoreCase))
+            culture.DateTimeFormat.Calendar = new System.Globalization.PersianCalendar();
+        return DateTime.TryParseExact(value.Trim(), formats, culture,
+            System.Globalization.DateTimeStyles.None, out result);
+    }
 
     private static object ConvertValue(ReportParameter parameter, string value) =>
         parameter.Type switch
@@ -392,9 +417,12 @@ public sealed class SqlReportExecutionService(
             "Number" when decimal.TryParse(value, System.Globalization.NumberStyles.Number,
                 System.Globalization.CultureInfo.InvariantCulture, out var number) => number,
             "Number" => throw new ArgumentException($"مقدار عددی «{parameter.DisplayName}» معتبر نیست."),
-            "Date" when DateTime.TryParse(value, System.Globalization.CultureInfo.InvariantCulture,
-                System.Globalization.DateTimeStyles.None, out var date) => date.Date,
+            "Date" when TryParseParameterDate(parameter, value, out var date) => date.Date,
             "Date" => throw new ArgumentException($"تاریخ «{parameter.DisplayName}» معتبر نیست."),
+            "Time" when TimeSpan.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var time) => time,
+            "Time" => throw new ArgumentException($"ساعت «{parameter.DisplayName}» معتبر نیست."),
+            "DateTime" when TryParseParameterDateTime(parameter, value, out var dateTime) => dateTime,
+            "DateTime" => throw new ArgumentException($"تاریخ و ساعت «{parameter.DisplayName}» معتبر نیست."),
             "Checkbox" when bool.TryParse(value, out var flag) => flag,
             "Checkbox" when value == "1" => true,
             "Checkbox" when value == "0" => false,
