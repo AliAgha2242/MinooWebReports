@@ -59,6 +59,9 @@ builder.Services.AddSession(options =>
     options.Cookie.Name = ".MinooWebReports.Session";
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     options.IdleTimeout = TimeSpan.FromHours(8);
 });
 
