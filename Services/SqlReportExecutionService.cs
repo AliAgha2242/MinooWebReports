@@ -61,10 +61,8 @@ public sealed class SqlReportExecutionService(
             values.TryGetValue(parameter.Name, out var rawValue);
             if (string.IsNullOrWhiteSpace(rawValue))
             {
-                if (parameter.IsRequired)
-                    throw new ArgumentException($"مقدار «{parameter.DisplayName}» الزامی است.");
-
-                command.Parameters.AddWithValue("@" + parameter.Name, DBNull.Value);
+                var emptyParameter = command.Parameters.Add("@" + parameter.Name, GetSqlDbType(parameter.Type));
+                emptyParameter.Value = parameter.Type == "Checkbox" ? false : DBNull.Value;
                 continue;
             }
 
@@ -110,6 +108,7 @@ public sealed class SqlReportExecutionService(
             throw new InvalidOperationException("گزارش باید فقط شامل یک دستور SELECT بدون comment باشد.");
 
         var tokens = Regex.Matches(sql, @"\b[A-Za-z_]+\b")
+            .Cast<Match>()
             .Select(m => m.Value)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
