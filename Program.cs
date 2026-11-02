@@ -5,6 +5,32 @@ using StackExchange.Redis;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = ".MinooWebReports.Auth";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.IsEssential = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        options.SlidingExpiration = true;
+        options.Events.OnRedirectToLogin = context =>
+        {
+            var parentLogin = builder.Configuration["Sso:Parent:LoginUrl"];
+            var launchPath = builder.Configuration["Sso:Parent:LaunchPath"] ?? "/Account/LaunchReports";
+            if (string.IsNullOrWhiteSpace(parentLogin))
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return Task.CompletedTask;
+            }
+            var separator = parentLogin.Contains('?') ? "&" : "?";
+            context.Response.Redirect($"{parentLogin}{separator}returnUrl={Uri.EscapeDataString(launchPath)}");
+            return Task.CompletedTask;
+        };
+    });
+builder.Services.AddAuthorization();
+builder.Services.AddHttpClient("MinooWebCore");
 builder.Services.AddHttpContextAccessor();
 
 var minooConfigFileName = builder.Configuration["MinooConfiguration:FileName"] ?? "AppConfig.json";
@@ -37,6 +63,7 @@ builder.Services.AddSession(options =>
 });
 
 builder.Services.AddSingleton<IServerDirectoryService, ServerDirectoryService>();
+builder.Services.AddScoped<ICompanyAppLocationService, CompanyAppLocationService>();
 builder.Services.AddScoped<ISelectedConnectionService, SelectedConnectionService>();
 builder.Services.AddScoped<IConnectionStringFactory, SqlConnectionStringFactory>();
 builder.Services.AddScoped<IUserReportSettingsService, UserReportSettingsService>();
@@ -55,6 +82,7 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseSession();
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(

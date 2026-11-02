@@ -1,10 +1,10 @@
-﻿using DocumentFormat.OpenXml.Spreadsheet;
 using MinooWebReports.Models;
 
-namespace MinooWebReports.Services
+namespace MinooWebReports.Services;
+
+public interface ICompanyAppLocationService
 {
-    public interface ICompanyAppLocationService
-    {
-        Task<VahedTejari> GetAllLocationAsync(UserModel UserId);
-    }
+    Task<IReadOnlyList<VahedTejari>> GetAllLocationAsync(
+        UserModel user,
+        CancellationToken cancellationToken = default);
 }

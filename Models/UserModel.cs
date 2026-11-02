@@ -1,16 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+namespace MinooWebReports.Models;
 
-namespace MinooWebReports.Models
+public sealed class UserModel
 {
-    public class UserModel 
-    {
-        public decimal UsersKeyId { get; set; }
-        public int UserId { get; set; }
-        public string UserName { get; set; }
-        public decimal? VahedeTejariSn { get; set; }
-        public string UserPassword { get; set; }
-        public string ExpireDate { get; set; }
-    }
+    // Preserve the original string UserCode, including leading zeroes.
+    public string UserCode { get; set; } = string.Empty;
+    public string UserName { get; set; } = string.Empty;
 }

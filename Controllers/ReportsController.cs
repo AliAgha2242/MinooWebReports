@@ -1,15 +1,18 @@
 using System.Data;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MinooWebReports.Models;
 using MinooWebReports.Services;
 
 namespace MinooWebReports.Controllers;
 
+[Authorize]
 public sealed class ReportsController(
     IReportRepository reports,
     IReportExecutionService execution,
     ISelectedConnectionService selectedConnection,
-    IServerDirectoryService serverDirectory,
+    ICompanyAppLocationService companyLocations,
     IUserReportSettingsService settings,
     ILogger<ReportsController> logger) : Controller
 {
@@ -31,10 +34,7 @@ public sealed class ReportsController(
         if (report is null)
             return NotFound();
 
-        var savedConnection = selectedConnection.Current;
-        var connection = savedConnection is null
-            ? null
-            : serverDirectory.GetBySn(savedConnection.VahedetejariSn);
+        var connection = await GetAuthorizedSelectedConnectionAsync(cancellationToken);
         if (connection is null)
         {
             TempData["Error"] = "محل اتصال انتخاب‌شده در AppConfig.json پیدا نشد. لطفاً دوباره انتخاب کنید.";
@@ -50,6 +50,22 @@ public sealed class ReportsController(
             SelectedConnection = connection,
             PageSize = Math.Clamp(preferences.PageSize, 10, 200)
         });
+    }
+
+    private async Task<VahedTejari?> GetAuthorizedSelectedConnectionAsync(CancellationToken cancellationToken)
+    {
+        var saved = selectedConnection.Current;
+        var userCode = User.FindFirstValue("UserCode");
+        if (saved is null || string.IsNullOrWhiteSpace(userCode))
+            return null;
+
+        var authorized = await companyLocations.GetAllLocationAsync(new UserModel
+        {
+            UserCode = userCode,
+            UserName = User.Identity?.Name ?? string.Empty
+        }, cancellationToken);
+
+        return authorized.SingleOrDefault(x => x.VahedetejariSn == saved.VahedetejariSn);
     }
 
     private async Task LoadParameterOptionsAsync(
@@ -83,10 +99,7 @@ public sealed class ReportsController(
         if (report is null)
             return NotFound();
 
-        var savedConnection = selectedConnection.Current;
-        var connection = savedConnection is null
-            ? null
-            : serverDirectory.GetBySn(savedConnection.VahedetejariSn);
+        var connection = await GetAuthorizedSelectedConnectionAsync(cancellationToken);
         if (connection is null)
         {
             TempData["Error"] = "محل اتصال فعال نیست یا در AppConfig.json وجود ندارد. ابتدا یک محل اتصال معتبر انتخاب کنید.";
