@@ -79,7 +79,7 @@
                         var fieldId = $"param-{parameter.Name}";
                         var options = ReadOptions(parameter.Options);
                         var datePlaceholder = parameter.Type == "DateTime"
-                            ? $"{parameter.DateFormat ?? "1405/01/01"}{parameter.DateTimeSeparator ?? " "}{parameter.TimeFormat ?? "HH:mm:ss"}"
+                            ? string.Concat(parameter.DateFormat ?? "1405/01/01", parameter.DateTimeSeparator ?? " ", parameter.TimeFormat ?? "HH:mm:ss")
                             : parameter.DateFormat ?? "1405/01/01";
                         <div class="reports-parameter-field">
                             <label for="@fieldId">@parameter.DisplayName</label>
