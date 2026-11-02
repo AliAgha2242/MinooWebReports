@@ -149,7 +149,7 @@ public sealed class MinooConfiguration : IMinooConfiguration, IDisposable
         if (!TryGetPropertyIgnoreCase(item, name, out var value)) return 0;
         if (value.ValueKind == JsonValueKind.Number && value.TryGetDecimal(out var number)) return number;
         return decimal.TryParse(value.ToString(), System.Globalization.NumberStyles.Number,
-            System.Globalization.CultureInfo.InvariantCulture, out number) ? number : 0;
+            System.Globalization.CultureInfo.InvariantCulture, out var parsed) ? parsed : 0;
     }
 
     private void ReloadSafely()
@@ -165,6 +165,7 @@ public sealed class MinooConfiguration : IMinooConfiguration, IDisposable
             }
         }
         catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
         catch (JsonException) { }
     }
 
