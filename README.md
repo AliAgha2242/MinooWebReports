@@ -88,7 +88,7 @@ Authenticated users use:
 MinooWebReports:UserReport:{userId}:{reportId}
 ```
 
-Until authentication is integrated, anonymous sessions are isolated by their ASP.NET session identifier. Preferences include page size, hidden columns, filters and sorting.
+Preferences include page size, hidden columns, filters and sorting, scoped to the authenticated user's report workspace.
 
 ## Production security requirements
 
