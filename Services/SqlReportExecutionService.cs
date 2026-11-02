@@ -21,7 +21,7 @@ public sealed class SqlReportExecutionService(
     [
         "INSERT", "UPDATE", "DELETE", "MERGE", "DROP", "ALTER", "CREATE",
         "TRUNCATE", "EXEC", "EXECUTE", "GRANT", "REVOKE", "DENY", "DBCC",
-        "BACKUP", "RESTORE", "BULK", "WAITFOR", "OPENROWSET", "OPENDATASOURCE"
+        "BACKUP", "RESTORE", "BULK", "WAITFOR", "OPENROWSET", "OPENQUERY", "OPENDATASOURCE", "USE", "SHUTDOWN", "RECONFIGURE"
     ];
 
     public Task<DataTable> ExecuteAsync(
@@ -138,6 +138,8 @@ public sealed class SqlReportExecutionService(
         {
             if (!ParameterNameRegex.IsMatch(parameter.Name))
                 throw new InvalidOperationException($"نام پارامتر «{parameter.Name}» معتبر نیست.");
+            if (parameter.Type is not ("Text" or "Number" or "Date" or "Checkbox" or "RadioButton" or "ListBox"))
+                throw new InvalidOperationException($"نوع پارامتر «{parameter.Type}» پشتیبانی نمی‌شود.");
 
             values.TryGetValue(parameter.Name, out var rawValue);
             var sqlParameter = command.Parameters.Add("@" + parameter.Name, GetSqlDbType(parameter.Type));
@@ -293,7 +295,8 @@ public sealed class SqlReportExecutionService(
         if (forbidden is not null)
             throw new InvalidOperationException($"عبارت {forbidden} در متن گزارش مجاز نیست.");
 
-        if (tokens.Contains("INTO") || tokens.Contains("OPENXML"))
+        if (tokens.Contains("INTO") || tokens.Contains("OPENXML") ||
+            tokens.Any(token => token.StartsWith("XP_", StringComparison.OrdinalIgnoreCase)))
             throw new InvalidOperationException("این نوع عبارت در گزارش فقط‌خواندنی مجاز نیست.");
     }
 
