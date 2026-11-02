@@ -30,7 +30,9 @@ Reports__MaxRows=5000
 Reports__MaxExcelBytes=20971520
 ```
 
-The report-target connection factory currently uses Windows Integrated Security. Under IIS, the application-pool identity must have the required read permissions on the selected report databases.\n\nThe shared Minoo server configuration file must be available beside the published application as `AppConfig.json` (or set `MinooConfiguration__FilePath` to its full path). The file must contain a `ServersInfo` array with `ServerName` (or `Ip`), `databaseName`, and `VahedeTejariSN`. An optional business-unit display name is read from `VahedetejariDs`, `VahedeTejariDs`, `VahedeTejariDS`, `VahedeTejariName`, `BusinessUnitName`, `UnitName`, or `Name`. The configuration file is environment-specific and must not be committed with secrets.
+The report-target connection factory currently uses Windows Integrated Security. Under IIS, the application-pool identity must have the required read permissions on the selected report databases.
+
+The shared Minoo server configuration file must be available beside the published application as `AppConfig.json` (or set `MinooConfiguration__FilePath` to its full path). The file must contain a `ServersInfo` array with `ServerName` (or `Ip`), `databaseName`, and `VahedeTejariSN`. An optional business-unit display name is read from `VahedetejariDs`, `VahedeTejariDs`, `VahedeTejariDS`, `VahedeTejariName`, `BusinessUnitName`, `UnitName`, or `Name`. The configuration file is environment-specific and must not be committed with secrets.
 
 ## Single sign-on configuration
 
