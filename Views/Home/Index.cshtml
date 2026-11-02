@@ -17,6 +17,9 @@
             <a class="admin-menu-link active" asp-controller="Home" asp-action="Index">
                 <span class="admin-menu-icon">⌂</span><span>داشبورد</span><span class="admin-menu-active-dot"></span>
             </a>
+            <a class="admin-menu-link" asp-controller="Reports" asp-action="Index">
+                <span class="admin-menu-icon">▤</span><span>گزارش‌ها</span>
+            </a>
             <a class="admin-menu-link" href="#connections">
                 <span class="admin-menu-icon">▤</span><span>محل‌های اتصال</span>
             </a>
@@ -52,6 +55,10 @@
             <span class="admin-welcome-symbol">R<span>•</span></span>
         </section>
 
+        @if (TempData["Error"] is string error)
+        {
+            <div class="report-message report-message-error" role="alert">@error</div>
+        }
         @if (TempData["Success"] is string success)
         {
             <div class="report-message report-message-success" role="status"><span>✓</span>@success</div>
@@ -135,7 +142,7 @@
 
         <section class="admin-notice reports-next-step">
             <span>i</span>
-            <p><strong>مرحله بعد:</strong> پس از انتخاب محل اتصال، فهرست گزارش‌های فعال و فرم پارامترهای هر گزارش در همین محیط نمایش داده می‌شود. اجرای گزارش‌ها به‌صورت فقط‌خواندنی خواهد بود.</p>
+            <p><strong>گزارش‌گیری:</strong> پس از انتخاب محل اتصال می‌توانید فهرست گزارش‌های فعال را مشاهده و گزارش موردنظر را اجرا کنید. <a asp-controller="Reports" asp-action="Index">رفتن به فهرست گزارش‌ها ←</a></p>
         </section>
 
         <footer class="admin-footer"><span>© @DateTime.Now.Year گروه صنعتی مینو</span><span>MINOO WEB REPORTS</span></footer>
