@@ -59,9 +59,29 @@
     <section class="admin-main">
         <header class="admin-topbar"><div><span class="admin-breadcrumb">MINOO / REPORTS / PARAMETERS</span><h1>@Model.Report.Name</h1></div><a class="reports-back-link" asp-action="Index">بازگشت به گزارش‌ها</a></header>
         <section class="admin-welcome reports-welcome"><div><span class="admin-eyebrow"><span class="status-dot"></span> REPORT PARAMETERS</span><h2>تنظیم پارامترهای گزارش</h2><p>تمام مقادیر موردنیاز را در همین فرم تکمیل کنید و یک‌بار گزارش را اجرا کنید.</p></div><span class="admin-welcome-symbol">R<span>•</span></span></section>
+        <section class="reports-active-strip reports-run-connection" aria-label="محل اجرای گزارش">
+            <span class="reports-connection-status-dot"></span>
+            <strong>محل اجرای گزارش</strong>
+            <span>واحد تجاری: <b>@Model.SelectedConnection.VahedetejariDs</b></span>
+            <span>سرور: <bdi>@Model.SelectedConnection.Server</bdi></span>
+            <span>دیتابیس: <bdi>@Model.SelectedConnection.DataBAset</bdi></span>
+        </section>
         @if (!string.IsNullOrWhiteSpace(Model.Error)) { <div class="report-message report-message-error" role="alert">@Model.Error</div> }
         <section class="report-builder">
-            <form asp-action="Run" method="post" class="reports-run-form" id="report-parameters-form">
+            <form asp-action="Run" method="post" class="reports-run-form" id="report-parameters-form" data-report-run-form>
+                <div class="reports-loading-overlay" data-report-loading hidden role="status" aria-live="assertive">
+                    <div class="reports-loading-card">
+                        <span class="reports-loading-spinner" aria-hidden="true"></span>
+                        <strong>در حال آماده‌سازی گزارش</strong>
+                        <p>در حال اتصال به پایگاه داده و پردازش اطلاعات هستیم.</p>
+                        <div class="reports-loading-details">
+                            <span>واحد تجاری <b>@Model.SelectedConnection.VahedetejariDs</b></span>
+                            <span>سرور <bdi>@Model.SelectedConnection.Server</bdi></span>
+                            <span>دیتابیس <bdi>@Model.SelectedConnection.DataBAset</bdi></span>
+                        </div>
+                        <small>لطفاً تا نمایش نتیجه، این صفحه را نبندید.</small>
+                    </div>
+                </div>
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="id" value="@Model.Report.Id" />
                 <div class="report-parameters-heading">
@@ -143,7 +163,7 @@
                 </div>
                 <div class="reports-run-actions">
                     <a asp-action="Index" class="reports-clear-button">انصراف</a>
-                    <button type="submit" class="reports-run-button">اجرای گزارش <span>←</span></button>
+                    <button type="submit" class="reports-run-button" data-report-run-button>اجرای گزارش <span>←</span></button>
                 </div>
             </form>
         </section>
