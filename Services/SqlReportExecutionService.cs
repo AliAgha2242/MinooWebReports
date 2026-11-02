@@ -258,7 +258,8 @@ public sealed class SqlReportExecutionService(
                 if (string.IsNullOrWhiteSpace(parameterValue))
                     return true;
 
-                var column = table.Columns[parameter.Name]!;
+                var column = table.Columns.Cast<DataColumn>().First(column =>
+                    string.Equals(column.ColumnName, parameter.Name, StringComparison.OrdinalIgnoreCase));
                 var cellValue = Convert.ToString(row[column], System.Globalization.CultureInfo.InvariantCulture);
                 IEnumerable<string> requestedValues = parameter.Type == "ListBox"
                     ? parameterValue.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
