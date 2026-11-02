@@ -224,8 +224,10 @@ public sealed class SqlReportExecutionService(
 
         foreach (var parameter in report.Parameters)
         {
-            if (!values.TryGetValue(parameter.Name, out var parameterValue) ||
-                string.IsNullOrWhiteSpace(parameterValue))
+            var hasValue = values.TryGetValue(parameter.Name, out var parameterValue);
+            if (!hasValue && parameter.Type != "Checkbox")
+                continue;
+            if (parameter.Type != "Checkbox" && string.IsNullOrWhiteSpace(parameterValue))
                 continue;
 
             var matchingColumn = table.Columns.Cast<DataColumn>()
