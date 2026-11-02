@@ -19,10 +19,14 @@ public sealed class ReportsController(
     [HttpGet]
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
+        var authorizedConnection = await GetAuthorizedSelectedConnectionAsync(cancellationToken);
+        if (selectedConnection.Current is not null && authorizedConnection is null)
+            await selectedConnection.ClearAsync(cancellationToken);
+
         var model = new ReportsIndexViewModel
         {
             Reports = await reports.GetActiveAsync(cancellationToken),
-            SelectedConnection = selectedConnection.Current
+            SelectedConnection = authorizedConnection
         };
         return View(model);
     }
