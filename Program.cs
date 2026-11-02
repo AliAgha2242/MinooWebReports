@@ -1,10 +1,16 @@
 using MinooWebReports.Services;
+using MinooWebReports.Persistence.StaticConfiguration;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpContextAccessor();
+
+var minooConfigFileName = builder.Configuration["MinooConfiguration:FileName"] ?? "AppConfig.json";
+var minooConfigFilePath = builder.Configuration["MinooConfiguration:FilePath"];
+builder.Services.AddSingleton<IMinooConfiguration>(_ =>
+    new MinooConfiguration(minooConfigFilePath, minooConfigFileName));
 
 var redisConnection = builder.Configuration.GetConnectionString("Redis")
     ?? "rabbit-srv:6379,abortConnect=false";
