@@ -1,4 +1,17 @@
 (() => {
+    document.querySelectorAll("[data-report-run-form]").forEach(form => {
+        form.addEventListener("submit", event => {
+            if (!form.checkValidity()) return;
+            const overlay = form.querySelector("[data-report-loading]");
+            const button = form.querySelector("[data-report-run-button]");
+            if (overlay) overlay.hidden = false;
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = '<span class="reports-button-spinner" aria-hidden="true"></span> در حال آماده‌سازی...';
+            }
+        });
+    });
+
     const toggle = document.querySelector("[data-password-toggle]");
     const password = document.querySelector("#Password");
     if (toggle && password) {
