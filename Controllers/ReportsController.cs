@@ -35,10 +35,11 @@ public sealed class ReportsController(
             return RedirectToAction("Index", "Home");
         }
 
+        var preferences = await settings.GetAsync(id, cancellationToken);
         return View(new ReportRunViewModel
         {
             Report = report,
-            PageSize = Math.Clamp(report.PageSize, 10, 200)
+            PageSize = Math.Clamp(preferences.PageSize, 10, 200)
         });
     }
 
@@ -51,6 +52,7 @@ public sealed class ReportsController(
         string? sortColumn,
         bool sortDescending,
         List<string>? hiddenColumns,
+        bool hiddenColumnsSubmitted = false,
         int page = 1,
         int? pageSize = null,
         CancellationToken cancellationToken = default)
@@ -111,7 +113,7 @@ public sealed class ReportsController(
                          .Take(actualPageSize))
                 paged.ImportRow(row);
 
-            var hidden = (hiddenColumns ?? preferences.HiddenColumns)
+            var hidden = (hiddenColumnsSubmitted ? hiddenColumns ?? [] : preferences.HiddenColumns)
                 .Where(column => validColumns.Contains(column, StringComparer.OrdinalIgnoreCase))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
