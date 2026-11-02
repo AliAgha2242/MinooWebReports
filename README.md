@@ -32,6 +32,21 @@ Reports__MaxExcelBytes=20971520
 
 The report-target connection factory currently uses Windows Integrated Security. Under IIS, the application-pool identity must have the required read permissions on the selected report databases.\n\nThe shared Minoo server configuration file must be available beside the published application as `AppConfig.json` (or set `MinooConfiguration__FilePath` to its full path). The file must contain a `ServersInfo` array with `ServerName` (or `Ip`), `databaseName`, and `VahedeTejariSN`. An optional business-unit display name is read from `VahedetejariDs`, `VahedeTejariDs`, `VahedeTejariDS`, `VahedeTejariName`, `BusinessUnitName`, `UnitName`, or `Name`. The configuration file is environment-specific and must not be committed with secrets.
 
+## Single sign-on configuration
+
+Configure these values on the Reports deployment. The client secret must be a high-entropy secret shared with MinooWebCore and supplied through a secret store or environment variable, never committed to source control:
+
+```text
+Sso__Parent__LoginUrl=https://<minoo-webcore-host>/Account/Login
+Sso__Parent__LaunchPath=/Account/LaunchReports
+Sso__Parent__RedeemUrl=https://<minoo-webcore-host>/api/sso/reports/redeem
+Sso__Parent__ClientSecret=<shared-secret>
+```
+
+MinooWebReports accepts a short-lived one-time ticket from the parent application, redeems it server-to-server, and issues its own secure authentication cookie. Direct access redirects to the parent login. Both applications must use HTTPS and share the same secret.
+
+Business-unit choices are loaded from the user's `UserCode` access rows for `ApplicationID = '5'`; only units also present in `ServersInfo` are offered. The selected unit is revalidated against the user's current access list on report execution.
+
 ## Run
 
 ```bash
@@ -79,7 +94,7 @@ Until authentication is integrated, anonymous sessions are isolated by their ASP
 
 - Give the report execution identity **SELECT-only permissions** on report databases. The SQL text gate is defense-in-depth, not a substitute for database permissions.
 - Never grant report users write access to target databases.
-- Configure authentication and per-report authorization before exposing this application to end users. Those policies are not yet integrated in this foundation.
+- Per-user authentication through MinooWebCore SSO and per-request business-unit access validation are integrated. Per-report authorization policies still need to be defined.
 - Store connection strings and credentials in environment variables or a secret store, never in source control.
 - The metadata connection string must be configured as `ConnectionStrings__ReportsMetadata`; it is intentionally not hard-coded.
 - The Minoo `AppConfig.json` server directory must be present and maintained in each deployment environment.
