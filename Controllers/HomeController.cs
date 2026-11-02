@@ -69,10 +69,11 @@ public sealed class HomeController(
             var locations = await GetAuthorizedLocationsAsync(cancellationToken);
             ViewBag.Connections = locations;
             var current = selectedConnection.Current;
-            ViewBag.SelectedConnection = current is null
+            var authorizedCurrent = current is null
                 ? null
                 : locations.SingleOrDefault(x => x.VahedetejariSn == current.VahedetejariSn);
-            if (current is not null && ViewBag.SelectedConnection is null)
+            ViewBag.SelectedConnection = authorizedCurrent;
+            if (current is not null && authorizedCurrent is null)
                 await selectedConnection.ClearAsync();
         }
         catch (UnauthorizedAccessException)
