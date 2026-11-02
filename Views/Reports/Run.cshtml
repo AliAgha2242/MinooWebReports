@@ -78,6 +78,9 @@
                         var currentValue = Model.Values.TryGetValue(parameter.Name, out var v) ? v : "";
                         var fieldId = $"param-{parameter.Name}";
                         var options = ReadOptions(parameter.Options);
+                        var datePlaceholder = parameter.Type == "DateTime"
+                            ? $"{parameter.DateFormat ?? "1405/01/01"}{parameter.DateTimeSeparator ?? " "}{parameter.TimeFormat ?? "HH:mm:ss"}"
+                            : parameter.DateFormat ?? "1405/01/01";
                         <div class="reports-parameter-field">
                             <label for="@fieldId">@parameter.DisplayName</label>
                             @if (parameter.Type == "Checkbox")
@@ -116,7 +119,7 @@
                             }
                             else if ((parameter.Type == "Date" || parameter.Type == "DateTime") && string.Equals(parameter.CalendarType, "Persian", StringComparison.OrdinalIgnoreCase))
                             {
-                                <input id="@fieldId" name="submittedValues[@parameter.Name]" type="text" inputmode="numeric" placeholder="@(parameter.Type == "DateTime" ? $"{parameter.DateFormat ?? "1405/01/01"} {parameter.TimeFormat ?? "HH:mm:ss"}" : parameter.DateFormat ?? "1405/01/01")" value="@currentValue" class="reports-input" dir="ltr" />
+                                <input id="@fieldId" name="submittedValues[@parameter.Name]" type="text" inputmode="numeric" placeholder="@datePlaceholder" value="@currentValue" class="reports-input" dir="ltr" />
                                 <small class="reports-field-hint">@(parameter.Type == "DateTime" ? "تاریخ و ساعت شمسی" : "تاریخ شمسی") · فرمت @parameter.DateFormat @parameter.TimeFormat</small>
                             }
                             else
