@@ -30,6 +30,8 @@ public sealed class SqlReportExecutionService(
         VahedTejari connection,
         CancellationToken cancellationToken = default)
     {
+        ValidateReportInputs(report, values);
+
         if (string.Equals(report.SourceType, "Sql", StringComparison.OrdinalIgnoreCase))
             return ExecuteSqlAsync(report, values, connection, cancellationToken);
 
@@ -136,11 +138,6 @@ public sealed class SqlReportExecutionService(
 
         foreach (var parameter in report.Parameters)
         {
-            if (!ParameterNameRegex.IsMatch(parameter.Name))
-                throw new InvalidOperationException($"نام پارامتر «{parameter.Name}» معتبر نیست.");
-            if (parameter.Type is not ("Text" or "Number" or "Date" or "Checkbox" or "RadioButton" or "ListBox"))
-                throw new InvalidOperationException($"نوع پارامتر «{parameter.Type}» پشتیبانی نمی‌شود.");
-
             values.TryGetValue(parameter.Name, out var rawValue);
             var sqlParameter = command.Parameters.Add("@" + parameter.Name, GetSqlDbType(parameter.Type));
             if (string.IsNullOrWhiteSpace(rawValue))
@@ -278,6 +275,79 @@ public sealed class SqlReportExecutionService(
         }
 
         return table;
+    }
+
+    private static void ValidateReportInputs(
+        ReportDefinition report,
+        IReadOnlyDictionary<string, string?> values)
+    {
+        foreach (var parameter in report.Parameters)
+        {
+            if (!ParameterNameRegex.IsMatch(parameter.Name))
+                throw new InvalidOperationException($"نام پارامتر «{parameter.Name}» معتبر نیست.");
+            if (parameter.Type is not ("Text" or "Number" or "Date" or "Checkbox" or "RadioButton" or "ListBox"))
+                throw new InvalidOperationException($"نوع پارامتر «{parameter.Type}» پشتیبانی نمی‌شود.");
+
+            if (!values.TryGetValue(parameter.Name, out var value) || string.IsNullOrWhiteSpace(value))
+                continue;
+
+            if (parameter.Type == "Text" && value.Length > 4000)
+                throw new ArgumentException($"طول مقدار «{parameter.DisplayName}» بیش از حد مجاز است.");
+
+            if (parameter.Type is "RadioButton" or "ListBox")
+            {
+                var allowed = ReadAllowedOptions(parameter.Options);
+                var submitted = parameter.Type == "ListBox"
+                    ? value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    : new[] { value };
+
+                if (submitted.Length == 0 || submitted.Any(item => !allowed.Contains(item)))
+                    throw new ArgumentException($"یکی از گزینه‌های انتخاب‌شده برای «{parameter.DisplayName}» معتبر نیست.");
+            }
+        }
+    }
+
+    private static HashSet<string> ReadAllowedOptions(string? json)
+    {
+        var values = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(json))
+            return values;
+
+        try
+        {
+            using var document = System.Text.Json.JsonDocument.Parse(json);
+            var root = document.RootElement;
+            if (root.ValueKind == System.Text.Json.JsonValueKind.Array)
+            {
+                foreach (var item in root.EnumerateArray())
+                {
+                    if (item.ValueKind == System.Text.Json.JsonValueKind.String)
+                        values.Add(item.GetString() ?? string.Empty);
+                    else if (item.ValueKind == System.Text.Json.JsonValueKind.Object)
+                    {
+                        foreach (var property in item.EnumerateObject())
+                        {
+                            if (string.Equals(property.Name, "value", StringComparison.OrdinalIgnoreCase))
+                            {
+                                values.Add(property.Value.ToString());
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            else if (root.ValueKind == System.Text.Json.JsonValueKind.Object)
+            {
+                foreach (var property in root.EnumerateObject())
+                    values.Add(property.Name);
+            }
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return [];
+        }
+
+        return values;
     }
 
     private static void ValidateReadOnlySelect(string sql)
