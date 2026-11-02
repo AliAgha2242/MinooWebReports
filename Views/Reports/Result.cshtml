@@ -18,6 +18,7 @@
         <form asp-action="Run" method="post" class="report-builder reports-result-builder">
             @Html.AntiForgeryToken()
             <input type="hidden" name="id" value="@Model.Report.Id" />
+            <input type="hidden" name="hiddenColumnsSubmitted" value="true" />
             @foreach (var item in Model.Values) { <input type="hidden" name="values[@item.Key]" value="@item.Value" /> }
             <div class="reports-grid-toolbar">
                 <div><span class="report-step">GRID SETTINGS</span><h3>فیلتر و تنظیم ستون‌ها</h3></div>
@@ -26,7 +27,7 @@
             <div class="reports-column-visibility">
                 @foreach (var column in Model.AllColumns)
                 {
-                    <label><input type="checkbox" name="hiddenColumns" value="@column" checked="@(!Model.HiddenColumns.Contains(column, StringComparer.OrdinalIgnoreCase))" /> @column</label>
+                    <label><input type="checkbox" name="hiddenColumns" value="@column" checked="@Model.HiddenColumns.Contains(column, StringComparer.OrdinalIgnoreCase)" /> پنهان‌کردن @column</label>
                 }
             </div>
             <div class="reports-grid-filters">
