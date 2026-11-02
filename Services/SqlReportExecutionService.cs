@@ -391,9 +391,9 @@ public sealed class SqlReportExecutionService(
     private static bool TryParseParameterDate(ReportParameter parameter, string value, out DateTime result)
     {
         var format = string.IsNullOrWhiteSpace(parameter.DateFormat) ? "yyyy-MM-dd" : parameter.DateFormat;
-        var culture = (System.Globalization.CultureInfo)System.Globalization.CultureInfo.InvariantCulture.Clone();
-        if (string.Equals(parameter.CalendarType, "Persian", StringComparison.OrdinalIgnoreCase))
-            culture.DateTimeFormat.Calendar = new System.Globalization.PersianCalendar();
+        var culture = string.Equals(parameter.CalendarType, "Persian", StringComparison.OrdinalIgnoreCase)
+            ? new System.Globalization.CultureInfo("fa-IR")
+            : System.Globalization.CultureInfo.InvariantCulture;
         return DateTime.TryParseExact(value.Trim(), new[] { format, "yyyyMMdd", "yyyy-MM-dd", "yyyy/MM/dd" },
             culture, System.Globalization.DateTimeStyles.None, out result);
     }
@@ -404,9 +404,9 @@ public sealed class SqlReportExecutionService(
         var dateFormat = string.IsNullOrWhiteSpace(parameter.DateFormat) ? "yyyy-MM-dd" : parameter.DateFormat;
         var timeFormat = string.IsNullOrWhiteSpace(parameter.TimeFormat) ? "HH:mm:ss" : parameter.TimeFormat;
         var formats = new[] { dateFormat + separator + timeFormat, "yyyy-MM-ddTHH:mm", "yyyy-MM-ddTHH:mm:ss" };
-        var culture = (System.Globalization.CultureInfo)System.Globalization.CultureInfo.InvariantCulture.Clone();
-        if (string.Equals(parameter.CalendarType, "Persian", StringComparison.OrdinalIgnoreCase))
-            culture.DateTimeFormat.Calendar = new System.Globalization.PersianCalendar();
+        var culture = string.Equals(parameter.CalendarType, "Persian", StringComparison.OrdinalIgnoreCase)
+            ? new System.Globalization.CultureInfo("fa-IR")
+            : System.Globalization.CultureInfo.InvariantCulture;
         return DateTime.TryParseExact(value.Trim(), formats, culture,
             System.Globalization.DateTimeStyles.None, out result);
     }
