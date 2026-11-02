@@ -52,7 +52,7 @@ public sealed class ReportsController(
         CancellationToken cancellationToken)
     {
         foreach (var parameter in report.Parameters.Where(parameter =>
-                     parameter.Type is "RadioButton" or "ListBox"))
+                     parameter.Type is "RadioButton" or "ListBox" or "ComboBox"))
         {
             parameter.Options = await execution.LoadParameterOptionsJsonAsync(
                 parameter, connection, cancellationToken);
@@ -192,7 +192,7 @@ public sealed class ReportsController(
             {
                 logger.LogWarning(optionsException, "Dynamic options for report {ReportId} could not be loaded.", id);
                 foreach (var parameter in report.Parameters.Where(parameter =>
-                             parameter.Type is "RadioButton" or "ListBox"))
+                             parameter.Type is "RadioButton" or "ListBox" or "ComboBox"))
                     parameter.Options ??= "[]";
             }
 
