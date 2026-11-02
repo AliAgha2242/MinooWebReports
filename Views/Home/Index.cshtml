@@ -1,93 +1,143 @@
+@using MinooWebReports.Models
 @{
-    ViewData["Title"] = "انتخاب محل اتصال";
+    ViewData["Title"] = "داشبورد گزارشات";
     var connections = ViewBag.TestConnections as IReadOnlyList<VahedTejari> ?? [];
     var selected = ViewBag.SelectedConnection as VahedTejari;
+    var userName = User.Identity?.Name;
+    var avatar = !string.IsNullOrWhiteSpace(userName) ? userName[..1].ToUpperInvariant() : "م";
 }
-
-<section class="hero-panel mb-4">
-    <div class="hero-mark">MR</div>
-    <div>
-        <div class="eyebrow">REPORTING WORKSPACE</div>
-        <h1 class="h3 mb-2">انتخاب محل اتصال</h1>
-        <p class="text-secondary mb-0">برای شروع کار، واحد تجاری و پایگاه داده موردنظر را انتخاب کنید.</p>
-    </div>
-</section>
-
-@if (TempData["Success"] is string success)
-{
-    <div class="alert alert-success">@success</div>
-}
-@if (!ViewData.ModelState.IsValid)
-{
-    <div asp-validation-summary="All" class="alert alert-danger"></div>
-}
-
-<div class="row g-4">
-    <div class="col-lg-7">
-        <div class="surface-card h-100">
-            <div class="section-heading">
-                <div>
-                    <h2 class="h5 mb-1">واحدهای تجاری</h2>
-                    <p class="text-secondary small mb-0">اطلاعات فعلاً آزمایشی است.</p>
-                </div>
-                <span class="soft-badge">@connections.Count مورد</span>
-            </div>
-
-            <div class="connection-list">
-                @foreach (var item in connections)
-                {
-                    var isSelected = selected?.VahedetejariSn == item.VahedetejariSn;
-                    <form asp-action="Select" method="post" class="connection-item">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="vahedetejariSn" value="@item.VahedetejariSn" />
-                        <div class="connection-icon">DB</div>
-                        <div class="connection-info">
-                            <strong>@item.VahedetejariDs</strong>
-                            <span>@item.Server / @item.DataBAset</span>
-                        </div>
-                        <button type="submit" class="btn @(isSelected ? "btn-success" : "btn-outline-primary") btn-sm">
-                            @(isSelected ? "انتخاب شده" : "انتخاب")
-                        </button>
-                    </form>
-                }
-            </div>
+<main class="admin-page reports-dashboard">
+    <aside class="admin-sidebar">
+        <a class="admin-brand" asp-controller="Home" asp-action="Index">
+            <span class="brand-mark">M<span>•</span></span>
+            <span class="brand-copy"><strong>MINOO</strong><span>WEB REPORTS</span></span>
+        </a>
+        <div class="admin-sidebar-label">سامانه گزارشات</div>
+        <nav class="admin-menu" aria-label="منوی اصلی">
+            <a class="admin-menu-link active" asp-controller="Home" asp-action="Index">
+                <span class="admin-menu-icon">⌂</span><span>داشبورد</span><span class="admin-menu-active-dot"></span>
+            </a>
+            <a class="admin-menu-link" href="#connections">
+                <span class="admin-menu-icon">▤</span><span>محل‌های اتصال</span>
+            </a>
+            <a class="admin-menu-link" href="#current-connection">
+                <span class="admin-menu-icon">◉</span><span>اتصال فعال</span>
+            </a>
+        </nav>
+        <div class="reports-sidebar-note">
+            <span class="status-dot"></span>
+            <div><strong>وضعیت سامانه</strong><small>زیرساخت آماده استفاده</small></div>
         </div>
-    </div>
+        <div class="admin-back-link"><span>✦</span> بخشی از درگاه یکپارچه مینو</div>
+    </aside>
 
-    <div class="col-lg-5">
-        <div class="surface-card current-card">
-            <div class="section-heading">
-                <div>
-                    <h2 class="h5 mb-1">محل اتصال فعلی</h2>
-                    <p class="text-secondary small mb-0">این انتخاب در طول نشست کاربر حفظ می‌شود.</p>
-                </div>
-                <span class="status-dot"></span>
+    <section class="admin-main">
+        <header class="admin-topbar">
+            <div>
+                <span class="admin-breadcrumb">MINOO / REPORTING WORKSPACE</span>
+                <h1>سامانه گزارشات</h1>
             </div>
+            <div class="admin-profile">
+                <span class="admin-profile-avatar">@avatar</span>
+                <span>@(string.IsNullOrWhiteSpace(userName) ? "کاربر سامانه" : userName)</span>
+            </div>
+        </header>
 
-            @if (selected is not null)
-            {
-                <div class="current-unit">
-                    <div class="current-unit-label">واحد تجاری انتخاب‌شده</div>
-                    <div class="current-unit-name">@selected.VahedetejariDs</div>
-                    <dl class="connection-details">
+        <section class="admin-welcome reports-welcome">
+            <div>
+                <span class="admin-eyebrow"><span class="status-dot"></span> درگاه هوشمند گزارش‌گیری</span>
+                <h2>به فضای گزارش‌گیری خوش آمدید</h2>
+                <p>ابتدا محل اتصال را انتخاب کنید؛ سپس می‌توانید گزارش‌های مجاز خود را مشاهده و اجرا کنید.</p>
+            </div>
+            <span class="admin-welcome-symbol">R<span>•</span></span>
+        </section>
+
+        @if (TempData["Success"] is string success)
+        {
+            <div class="report-message report-message-success" role="status"><span>✓</span>@success</div>
+        }
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div asp-validation-summary="All" class="report-validation-summary"></div>
+        }
+
+        <div class="reports-overview">
+            <section class="report-builder" id="connections">
+                <div class="report-parameters-heading report-list-heading">
+                    <div>
+                        <span class="report-step">STEP 01 · CONNECTION</span>
+                        <h3>انتخاب محل اتصال</h3>
+                        <p>واحد تجاری و پایگاه داده‌ای را که گزارش باید از آن خوانده شود انتخاب کنید.</p>
+                    </div>
+                    <span class="report-builder-icon">⌘</span>
+                </div>
+
+                <div class="reports-connection-list">
+                    @foreach (var item in connections)
+                    {
+                        var isSelected = selected?.VahedetejariSn == item.VahedetejariSn;
+                        <form asp-action="Select" method="post" class="reports-connection-card @(isSelected ? "is-selected" : "")">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="vahedetejariSn" value="@item.VahedetejariSn" />
+                            <span class="reports-connection-icon">DB</span>
+                            <span class="reports-connection-copy">
+                                <strong>@item.VahedetejariDs</strong>
+                                <small><bdi>@item.Server</bdi><i>/</i><bdi>@item.DataBAset</bdi></small>
+                            </span>
+                            @if (isSelected)
+                            {
+                                <span class="reports-selected-label"><span>✓</span> انتخاب شده</span>
+                            }
+                            else
+                            {
+                                <button type="submit" class="reports-select-button">انتخاب محل اتصال <span>←</span></button>
+                            }
+                        </form>
+                    }
+                </div>
+                <p class="reports-demo-hint"><span>i</span> فهرست فعلی آزمایشی است و در مرحله اتصال به سرویس اطلاعات واحدهای تجاری جایگزین خواهد شد.</p>
+            </section>
+
+            <aside class="report-builder reports-current-card" id="current-connection">
+                <div class="report-parameters-heading">
+                    <div>
+                        <span class="report-step">ACTIVE CONNECTION</span>
+                        <h3>محل اتصال فعال</h3>
+                        <p>انتخاب فعلی فقط برای نشست همین کاربر نگهداری می‌شود.</p>
+                    </div>
+                </div>
+                @if (selected is not null)
+                {
+                    <div class="reports-current-state">
+                        <span class="reports-current-check">✓</span>
+                        <div><small>در حال استفاده از</small><strong>@selected.VahedetejariDs</strong></div>
+                    </div>
+                    <dl class="reports-connection-details">
                         <dt>شماره واحد</dt><dd>@selected.VahedetejariSn</dd>
                         <dt>سرور</dt><dd dir="ltr">@selected.Server</dd>
                         <dt>پایگاه داده</dt><dd dir="ltr">@selected.DataBAset</dd>
                     </dl>
-                </div>
-                <form asp-action="Clear" method="post">
-                    @Html.AntiForgeryToken()
-                    <button class="btn btn-light w-100" type="submit">لغو انتخاب</button>
-                </form>
-            }
-            else
-            {
-                <div class="empty-state">
-                    <div class="empty-icon">DB</div>
-                    <strong>هنوز محل اتصالی انتخاب نشده</strong>
-                    <span>یکی از واحدهای تجاری را از فهرست انتخاب کنید.</span>
-                </div>
-            }
+                    <form asp-action="Clear" method="post" class="reports-clear-form">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="reports-clear-button">لغو انتخاب محل اتصال</button>
+                    </form>
+                }
+                else
+                {
+                    <div class="reports-empty-connection">
+                        <span>⌘</span>
+                        <strong>هنوز اتصالی انتخاب نشده است</strong>
+                        <p>برای فعال شدن گزارش‌گیری، یکی از محل‌های اتصال را انتخاب کنید.</p>
+                    </div>
+                }
+            </aside>
         </div>
-    </div>
-</div>
+
+        <section class="admin-notice reports-next-step">
+            <span>i</span>
+            <p><strong>مرحله بعد:</strong> پس از انتخاب محل اتصال، فهرست گزارش‌های فعال و فرم پارامترهای هر گزارش در همین محیط نمایش داده می‌شود. اجرای گزارش‌ها به‌صورت فقط‌خواندنی خواهد بود.</p>
+        </section>
+
+        <footer class="admin-footer"><span>© @DateTime.Now.Year گروه صنعتی مینو</span><span>MINOO WEB REPORTS</span></footer>
+    </section>
+</main>
