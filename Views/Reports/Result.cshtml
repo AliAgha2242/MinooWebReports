@@ -40,6 +40,7 @@
                 }
                 <label>مرتب‌سازی بر اساس <select name="sortColumn" class="reports-input"><option value="">بدون مرتب‌سازی</option>@foreach (var column in Model.AllColumns) { <option value="@column" selected="@(Model.SortColumn == column)">@column</option> }</select></label>
                 <label class="reports-checkbox"><input type="checkbox" name="sortDescending" value="true" checked="@Model.SortDescending" /> نزولی</label>
+                <input type="hidden" name="sortDescending" value="false" />
                 <button type="submit" class="reports-run-button">اعمال تنظیمات</button>
             </div>
             <div class="reports-table-wrap">
