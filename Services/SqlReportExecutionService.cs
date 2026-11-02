@@ -347,7 +347,7 @@ public sealed class SqlReportExecutionService(
         }
         catch (System.Text.Json.JsonException)
         {
-            return [];
+            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         }
 
         return values;
