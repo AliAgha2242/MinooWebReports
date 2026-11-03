@@ -396,7 +396,13 @@
             browserPreferences = {};
         }
 
-        const columnWidths = { ...(browserPreferences.columnWidths || {}) };
+        let serverColumnWidths = {};
+        try {
+            serverColumnWidths = JSON.parse(widthsInput?.value || "{}") || {};
+        } catch {
+            serverColumnWidths = {};
+        }
+        const columnWidths = { ...serverColumnWidths, ...(browserPreferences.columnWidths || {}) };
         const validWidth = value => Math.max(90, Math.min(800, Math.round(Number(value) || 160)));
 
         const applyWidths = () => {
