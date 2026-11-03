@@ -11,4 +11,6 @@ public sealed class GridPreferences
     public string? SortColumn { get; set; }
     public bool SortDescending { get; set; }
     public List<string> GroupColumns { get; set; } = [];
+    public Dictionary<string, int> ColumnWidths { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public string Theme { get; set; } = "midnight";
 }
