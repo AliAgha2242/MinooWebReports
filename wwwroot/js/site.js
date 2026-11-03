@@ -372,4 +372,272 @@
         });
     }
 
+
+
+    // Per-user report grid preferences, drag-and-drop grouping and column resizing.
+    const reportGrid = document.querySelector("[data-report-grid]");
+    if (reportGrid) {
+        const reportForm = reportGrid.querySelector("[data-report-grid-form]");
+        const table = reportGrid.querySelector("[data-report-table]");
+        const dropzone = reportGrid.querySelector("[data-group-dropzone]");
+        const palette = reportGrid.querySelector("[data-group-palette]");
+        const themePicker = reportGrid.querySelector("[data-grid-theme-picker]");
+        const widthsInput = reportGrid.querySelector("[data-column-widths]");
+        const themeInput = reportGrid.querySelector("[data-grid-theme-input]");
+        const reportId = reportGrid.dataset.reportId || "unknown";
+        const userKey = reportGrid.dataset.gridUser || "browser";
+        const storageKey = "minoo-report-grid:" + userKey + ":" + reportId;
+        const allowedThemes = ["midnight", "light", "ocean", "contrast"];
+        let browserPreferences = {};
+
+        try {
+            browserPreferences = JSON.parse(localStorage.getItem(storageKey) || "{}") || {};
+        } catch {
+            browserPreferences = {};
+        }
+
+        const columnWidths = { ...(browserPreferences.columnWidths || {}) };
+        const validWidth = value => Math.max(90, Math.min(800, Math.round(Number(value) || 160)));
+
+        const applyWidths = () => {
+            table?.querySelectorAll("[data-column-header]").forEach(header => {
+                const column = header.dataset.columnHeader;
+                if (columnWidths[column]) {
+                    const width = validWidth(columnWidths[column]);
+                    header.style.width = width + "px";
+                    header.style.minWidth = "90px";
+                    columnWidths[column] = width;
+                }
+            });
+        };
+
+        const applyTheme = value => {
+            const theme = allowedThemes.includes(value) ? value : "midnight";
+            reportGrid.dataset.gridTheme = theme;
+            if (themePicker) themePicker.value = theme;
+            if (themeInput) themeInput.value = theme;
+            browserPreferences.theme = theme;
+            return theme;
+        };
+
+        const currentGroupValues = () => Array.from(dropzone?.querySelectorAll('input[name="groupColumns"]') || [])
+            .map(input => input.value);
+
+        const renderGroups = values => {
+            if (!dropzone) return;
+            const selected = [...new Set(values)].slice(0, 3);
+            dropzone.innerHTML = "";
+
+            if (!selected.length) {
+                const placeholder = document.createElement("span");
+                placeholder.className = "reports-group-placeholder";
+                placeholder.textContent = "ستون‌ها را از فهرست زیر به این قسمت بکشید";
+                dropzone.appendChild(placeholder);
+            }
+
+            selected.forEach(column => {
+                const chip = document.createElement("span");
+                chip.className = "reports-group-chip";
+                chip.draggable = true;
+                chip.dataset.groupChip = "";
+                chip.dataset.column = column;
+
+                const handle = document.createElement("span");
+                handle.className = "reports-drag-handle";
+                handle.textContent = "⠿";
+                const label = document.createElement("b");
+                label.textContent = column;
+                const remove = document.createElement("button");
+                remove.type = "button";
+                remove.dataset.removeGroup = "";
+                remove.setAttribute("aria-label", "حذف گروه " + column);
+                remove.textContent = "×";
+                const hidden = document.createElement("input");
+                hidden.type = "hidden";
+                hidden.name = "groupColumns";
+                hidden.value = column;
+
+                chip.append(handle, label, remove, hidden);
+                dropzone.appendChild(chip);
+            });
+
+            palette?.querySelectorAll("[data-group-source]").forEach(button => {
+                button.hidden = selected.includes(button.dataset.column);
+            });
+        };
+
+        const readFormPreferences = () => {
+            const filters = {};
+            reportForm.querySelectorAll('input[name^="filters["]').forEach(input => {
+                const match = input.name.match(/^filters\[(.*)\]$/);
+                if (match) filters[match[1]] = input.value;
+            });
+            const hiddenColumns = Array.from(reportForm.querySelectorAll('input[name="hiddenColumns"]:checked'))
+                .map(input => input.value);
+            const sortInput = reportForm.querySelector('select[name="sortColumn"]');
+            const descendingInput = reportForm.querySelector('input[name="sortDescending"][type="checkbox"]');
+            const pageSizeInput = reportForm.querySelector('select[name="pageSize"]');
+            return {
+                theme: applyTheme(themePicker?.value || reportGrid.dataset.gridTheme),
+                columnWidths: { ...columnWidths },
+                filters,
+                hiddenColumns,
+                groupColumns: currentGroupValues(),
+                sortColumn: sortInput?.value || "",
+                sortDescending: !!descendingInput?.checked,
+                pageSize: pageSizeInput?.value || "25"
+            };
+        };
+
+        const persistPreferences = () => {
+            if (!reportForm) return;
+            browserPreferences = readFormPreferences();
+            if (widthsInput) widthsInput.value = JSON.stringify(columnWidths);
+            if (themeInput) themeInput.value = browserPreferences.theme;
+            try {
+                localStorage.setItem(storageKey, JSON.stringify(browserPreferences));
+            } catch {
+                // Redis persistence still runs when the form is submitted.
+            }
+        };
+
+        // Restore browser-local choices over the server defaults, if this browser has them.
+        applyTheme(browserPreferences.theme || reportGrid.dataset.gridTheme);
+        applyWidths();
+
+        if (browserPreferences.filters) {
+            reportForm.querySelectorAll('input[name^="filters["]').forEach(input => {
+                const match = input.name.match(/^filters\[(.*)\]$/);
+                if (match && Object.prototype.hasOwnProperty.call(browserPreferences.filters, match[1]))
+                    input.value = browserPreferences.filters[match[1]];
+            });
+        }
+        if (Array.isArray(browserPreferences.hiddenColumns)) {
+            reportForm.querySelectorAll('input[name="hiddenColumns"]').forEach(input => {
+                input.checked = browserPreferences.hiddenColumns.includes(input.value);
+            });
+        }
+        if (browserPreferences.sortColumn !== undefined) {
+            const sortInput = reportForm.querySelector('select[name="sortColumn"]');
+            if (sortInput) sortInput.value = browserPreferences.sortColumn;
+        }
+        if (browserPreferences.sortDescending !== undefined) {
+            const descendingInput = reportForm.querySelector('input[name="sortDescending"][type="checkbox"]');
+            if (descendingInput) descendingInput.checked = !!browserPreferences.sortDescending;
+        }
+        if (browserPreferences.pageSize) {
+            const pageSizeInput = reportForm.querySelector('select[name="pageSize"]');
+            if (pageSizeInput) pageSizeInput.value = browserPreferences.pageSize;
+        }
+        if (Array.isArray(browserPreferences.groupColumns))
+            renderGroups(browserPreferences.groupColumns);
+        else
+            renderGroups(currentGroupValues());
+
+        themePicker?.addEventListener("change", () => {
+            applyTheme(themePicker.value);
+            persistPreferences();
+        });
+
+        // Resize from the left edge (RTL layout), with a hard 90px minimum.
+        table?.querySelectorAll("[data-column-resizer]").forEach(handle => {
+            handle.addEventListener("pointerdown", event => {
+                event.preventDefault();
+                const header = handle.closest("[data-column-header]");
+                if (!header) return;
+                const column = header.dataset.columnHeader;
+                const startX = event.clientX;
+                const startWidth = header.getBoundingClientRect().width;
+
+                const move = moveEvent => {
+                    const width = validWidth(startWidth + (startX - moveEvent.clientX));
+                    columnWidths[column] = width;
+                    header.style.width = width + "px";
+                    header.style.minWidth = "90px";
+                };
+                const finish = () => {
+                    document.removeEventListener("pointermove", move);
+                    document.removeEventListener("pointerup", finish);
+                    document.removeEventListener("pointercancel", finish);
+                    persistPreferences();
+                };
+                document.addEventListener("pointermove", move);
+                document.addEventListener("pointerup", finish, { once: true });
+                document.addEventListener("pointercancel", finish, { once: true });
+            });
+        });
+
+        // Drag a column into the grouping area, then reorder grouped columns by dragging chips.
+        let draggedGroup = null;
+        const startGroupDrag = (event, element, fromPalette) => {
+            const column = element?.dataset.column;
+            if (!column) return;
+            draggedGroup = { column, fromPalette };
+            element.classList.add("is-dragging");
+            event.dataTransfer?.setData("text/plain", JSON.stringify(draggedGroup));
+            if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+        };
+        palette?.addEventListener("dragstart", event => {
+            const source = event.target.closest("[data-group-source]");
+            if (source) startGroupDrag(event, source, true);
+        });
+        dropzone?.addEventListener("dragstart", event => {
+            const chip = event.target.closest("[data-group-chip]");
+            if (chip) startGroupDrag(event, chip, false);
+        });
+        document.addEventListener("dragend", () => {
+            reportGrid.querySelectorAll(".is-dragging").forEach(element => element.classList.remove("is-dragging"));
+            dropzone?.classList.remove("is-drag-over");
+            draggedGroup = null;
+        });
+        dropzone?.addEventListener("dragover", event => {
+            if (!draggedGroup) return;
+            event.preventDefault();
+            dropzone.classList.add("is-drag-over");
+        });
+        dropzone?.addEventListener("dragleave", event => {
+            if (!dropzone.contains(event.relatedTarget)) dropzone.classList.remove("is-drag-over");
+        });
+        dropzone?.addEventListener("drop", event => {
+            if (!draggedGroup) return;
+            event.preventDefault();
+            dropzone.classList.remove("is-drag-over");
+            const values = currentGroupValues();
+            const targetChip = event.target.closest("[data-group-chip]");
+            const targetColumn = targetChip?.dataset.column;
+            const sourceColumn = draggedGroup.column;
+
+            if (draggedGroup.fromPalette) {
+                if (values.includes(sourceColumn) || values.length >= 3) return;
+                const targetIndex = targetColumn ? values.indexOf(targetColumn) : -1;
+                if (targetIndex >= 0) values.splice(targetIndex, 0, sourceColumn);
+                else values.push(sourceColumn);
+            } else {
+                const sourceIndex = values.indexOf(sourceColumn);
+                if (sourceIndex < 0) return;
+                values.splice(sourceIndex, 1);
+                const targetIndex = targetColumn ? values.indexOf(targetColumn) : -1;
+                if (targetIndex >= 0) values.splice(targetIndex, 0, sourceColumn);
+                else values.push(sourceColumn);
+            }
+            renderGroups(values);
+            persistPreferences();
+        });
+        dropzone?.addEventListener("click", event => {
+            const remove = event.target.closest("[data-remove-group]");
+            if (!remove) return;
+            const column = remove.closest("[data-group-chip]")?.dataset.column;
+            renderGroups(currentGroupValues().filter(value => value !== column));
+            persistPreferences();
+        });
+
+        reportForm?.addEventListener("submit", persistPreferences);
+        reportForm?.querySelectorAll('input[name^="filters["], input[name="hiddenColumns"], select[name="sortColumn"], input[name="sortDescending"], select[name="pageSize"]')
+            .forEach(input => input.addEventListener("change", persistPreferences));
+
+        // Ensure the first submission also sends the initial Redis/browser state.
+        if (widthsInput) widthsInput.value = JSON.stringify(columnWidths);
+        if (themeInput) themeInput.value = reportGrid.dataset.gridTheme;
+    }
+
 })();
