@@ -1,5 +1,6 @@
 using System.Data;
 using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MinooWebReports.Models;
@@ -97,6 +98,8 @@ public sealed class ReportsController(
         List<string>? groupColumns,
         bool groupColumnsSubmitted = false,
         bool hiddenColumnsSubmitted = false,
+        string? columnWidthsJson = null,
+        string? gridTheme = null,
         int page = 1,
         int? pageSize = null,
         CancellationToken cancellationToken = default)
@@ -132,6 +135,23 @@ public sealed class ReportsController(
         if (!groupColumnsSubmitted)
             groupColumns = savedPreferences.GroupColumns;
 
+        Dictionary<string, int> columnWidths;
+        try
+        {
+            columnWidths = string.IsNullOrWhiteSpace(columnWidthsJson)
+                ? savedPreferences.ColumnWidths
+                : JsonSerializer.Deserialize<Dictionary<string, int>>(columnWidthsJson)
+                    ?? savedPreferences.ColumnWidths;
+        }
+        catch (JsonException)
+        {
+            columnWidths = savedPreferences.ColumnWidths;
+        }
+
+        var selectedGridTheme = gridTheme ?? savedPreferences.Theme;
+        if (selectedGridTheme is not ("midnight" or "light" or "ocean" or "contrast"))
+            selectedGridTheme = "midnight";
+
         try
         {
             await LoadParameterOptionsAsync(report, connection, cancellationToken);
@@ -148,6 +168,11 @@ public sealed class ReportsController(
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Take(3)
                 .ToList();
+
+            columnWidths = columnWidths
+                .Where(pair => validColumns.Contains(pair.Key, StringComparer.OrdinalIgnoreCase))
+                .Take(200)
+                .ToDictionary(pair => pair.Key, pair => Math.Clamp(pair.Value, 90, 800), StringComparer.OrdinalIgnoreCase);
 
             var filteredRows = raw.AsEnumerable().Where(row => filters.All(filter =>
                 string.IsNullOrWhiteSpace(filter.Value) ||
@@ -211,7 +236,9 @@ public sealed class ReportsController(
                     .ToDictionary(x => x.Key, x => x.Value!, StringComparer.OrdinalIgnoreCase),
                 SortColumn = sortColumn,
                 SortDescending = sortDescending,
-                GroupColumns = groupColumns
+                GroupColumns = groupColumns,
+                ColumnWidths = columnWidths,
+                Theme = selectedGridTheme
             }, cancellationToken);
 
             return View("Result", new ReportResultViewModel
@@ -224,6 +251,8 @@ public sealed class ReportsController(
                 AllColumns = validColumns,
                 HiddenColumns = hidden,
                 GroupColumns = groupColumns,
+                ColumnWidths = columnWidths,
+                GridTheme = selectedGridTheme,
                 SortColumn = sortColumn,
                 SortDescending = sortDescending,
                 Page = page,
