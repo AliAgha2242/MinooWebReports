@@ -9,82 +9,84 @@
             ? "—"
             : Convert.ToString(row[column], System.Globalization.CultureInfo.CurrentCulture) ?? "—";
 }
-<main class="reports-result-page">
+<main class="reports-result-page" data-report-grid data-report-id="@Model.Report.Id" data-grid-theme="@Model.GridTheme">
     <header class="reports-result-header">
         <a class="admin-brand" asp-controller="Home" asp-action="Index"><span class="brand-mark">M<span>•</span></span><span class="brand-copy"><strong>MINOO</strong><span>WEB REPORTS</span></span></a>
         <div class="reports-result-header-title">
             <span class="admin-breadcrumb">MINOO / REPORTS / RESULT</span>
             <h1>@Model.Report.Name</h1>
-            <p>خروجی گزارش در صفحه مستقل</p>
+            <p>گزارش تعاملی · فیلتر، گروه‌بندی و شخصی‌سازی ستون‌ها</p>
         </div>
         <a class="reports-back-link" asp-action="Run" asp-route-id="@Model.Report.Id">بازگشت به پارامترها</a>
     </header>
 
-    <section class="reports-result-context">
-        <div class="reports-result-context-title"><span class="reports-connection-status-dot"></span><strong>محل اجرای گزارش</strong></div>
-        <div><small>واحد تجاری</small><strong>@Model.SelectedConnection.VahedetejariDs</strong></div>
-        <div><small>سرور</small><bdi>@Model.SelectedConnection.Server</bdi></div>
-        <div><small>دیتابیس</small><bdi>@Model.SelectedConnection.DataBAset</bdi></div>
-        @if (!string.IsNullOrWhiteSpace(Model.SelectedConnection.ServerIp))
-        {
-            <div><small>IP سرور</small><bdi>@Model.SelectedConnection.ServerIp</bdi></div>
-        }
-    </section>
-
-    <section class="reports-result-summary">
-        <div><span class="report-step">REPORT OUTPUT</span><h2>نتیجه اجرای گزارش</h2><p>@Model.TotalRows.ToString("N0") رکورد · صفحه @Model.Page از @Model.TotalPages</p></div>
-        <div class="reports-result-summary-stat"><strong>@Model.TotalRows.ToString("N0")</strong><span>تعداد رکوردها</span></div>
-    </section>
-
-    <form asp-action="Run" method="post" class="reports-result-workspace">
+    <form asp-action="Run" method="post" class="reports-result-workspace" data-report-grid-form>
         @Html.AntiForgeryToken()
         <input type="hidden" name="id" value="@Model.Report.Id" />
         <input type="hidden" name="hiddenColumnsSubmitted" value="true" />
         <input type="hidden" name="groupColumnsSubmitted" value="true" />
+        <input type="hidden" name="columnWidthsJson" value="" data-column-widths />
+        <input type="hidden" name="gridTheme" value="@Model.GridTheme" data-grid-theme-input />
         @foreach (var item in Model.Values)
         {
             <input type="hidden" name="submittedValues[@item.Key]" value="@item.Value" />
         }
 
         <div class="reports-grid-toolbar">
-            <div><span class="report-step">GRID SETTINGS</span><h3>فیلتر، گروه‌بندی و تنظیم ستون‌ها</h3></div>
-            @if (Model.Report.NeedsPagination)
-            {
-                <label>تعداد در صفحه
-                    <select name="pageSize" class="reports-input reports-page-size">
-                        <option value="10" selected="@(Model.PageSize == 10)">10</option>
-                        <option value="25" selected="@(Model.PageSize == 25)">25</option>
-                        <option value="50" selected="@(Model.PageSize == 50)">50</option>
-                        <option value="100" selected="@(Model.PageSize == 100)">100</option>
-                        <option value="200" selected="@(Model.PageSize == 200)">200</option>
+            <div>
+                <span class="report-step">REPORT OUTPUT</span>
+                <h2> @Model.Report.Name </h2>
+                <p>@Model.TotalRows.ToString("N0") رکورد · صفحه @Model.Page از @Model.TotalPages</p>
+            </div>
+            <div class="reports-grid-actions">
+                <label class="reports-theme-picker">قالب نمایش
+                    <select class="reports-input" data-grid-theme-picker aria-label="انتخاب تم گزارش">
+                        <option value="midnight" selected="@(Model.GridTheme == "midnight")">نیمه‌شب</option>
+                        <option value="light" selected="@(Model.GridTheme == "light")">روشن</option>
+                        <option value="ocean" selected="@(Model.GridTheme == "ocean")">اقیانوسی</option>
+                        <option value="contrast" selected="@(Model.GridTheme == "contrast")">کنتراست بالا</option>
                     </select>
                 </label>
-            }
+                @if (Model.Report.NeedsPagination)
+                {
+                    <label>تعداد در صفحه
+                        <select name="pageSize" class="reports-input reports-page-size">
+                            <option value="10" selected="@(Model.PageSize == 10)">10</option>
+                            <option value="25" selected="@(Model.PageSize == 25)">25</option>
+                            <option value="50" selected="@(Model.PageSize == 50)">50</option>
+                            <option value="100" selected="@(Model.PageSize == 100)">100</option>
+                            <option value="200" selected="@(Model.PageSize == 200)">200</option>
+                        </select>
+                    </label>
+                }
+            </div>
         </div>
 
-        <div class="reports-column-visibility">
-            @foreach (var column in Model.AllColumns)
-            {
-                <label><input type="checkbox" name="hiddenColumns" value="@column" checked="@Model.HiddenColumns.Contains(column, StringComparer.OrdinalIgnoreCase)" /> پنهان‌کردن @column</label>
-            }
-        </div>
+        <section class="reports-grouping-panel" aria-label="گروه‌بندی ستون‌ها">
+            <div class="reports-grouping-heading">
+                <div><strong>گروه‌بندی با کشیدن و رها کردن</strong><small>ستون موردنظر را بکشید و در ناحیه زیر رها کنید؛ ترتیب گروه‌ها قابل تغییر است.</small></div>
+                <span>حداکثر ۳ سطح</span>
+            </div>
+            <div class="reports-group-dropzone" data-group-dropzone>
+                <span class="reports-group-placeholder" data-group-placeholder>ستون‌ها را از فهرست زیر به این قسمت بکشید</span>
+                @foreach (var column in Model.GroupColumns)
+                {
+                    <span class="reports-group-chip" draggable="true" data-group-chip data-column="@column">
+                        <span class="reports-drag-handle">⠿</span><b>@column</b>
+                        <button type="button" data-remove-group aria-label="حذف گروه @column">×</button>
+                        <input type="hidden" name="groupColumns" value="@column" />
+                    </span>
+                }
+            </div>
+            <div class="reports-group-palette" data-group-palette>
+                @foreach (var column in Model.AllColumns.Where(column => !Model.GroupColumns.Contains(column, StringComparer.OrdinalIgnoreCase)))
+                {
+                    <button type="button" class="reports-group-source" draggable="true" data-group-source data-column="@column">@column <span>⠿</span></button>
+                }
+            </div>
+        </section>
 
-        <div class="reports-grid-filters">
-            @foreach (var column in Model.AllColumns)
-            {
-                <label>@column
-                    <input class="reports-input" name="filters[@column]" value="@(Model.Filters.TryGetValue(column, out var filter) ? filter : "")" placeholder="فیلتر..." />
-                </label>
-            }
-            <label>گروه‌بندی بر اساس
-                <select name="groupColumns" class="reports-input" multiple size="4" aria-label="ستون‌های گروه‌بندی">
-                    @foreach (var column in Model.AllColumns)
-                    {
-                        <option value="@column" selected="@Model.GroupColumns.Contains(column, StringComparer.OrdinalIgnoreCase)">@column</option>
-                    }
-                </select>
-                <small class="reports-field-hint">حداکثر سه ستون؛ ترتیب ستون‌ها در فهرست، از گروه اصلی تا گروه‌های تو‌در‌تو است. برای لغو گروه‌بندی، همه گزینه‌ها را از انتخاب خارج کنید.</small>
-            </label>
+        <div class="reports-grid-controls">
             <label>مرتب‌سازی بر اساس
                 <select name="sortColumn" class="reports-input">
                     <option value="">بدون مرتب‌سازی</option>
@@ -96,12 +98,39 @@
             </label>
             <label class="reports-checkbox"><input type="checkbox" name="sortDescending" value="true" checked="@Model.SortDescending" /> نزولی</label>
             <input type="hidden" name="sortDescending" value="false" />
-            <button type="submit" class="reports-run-button">اعمال تنظیمات</button>
+            <details class="reports-column-picker">
+                <summary>نمایش و پنهان‌سازی ستون‌ها <span>@Model.AllColumns.Count ستون</span></summary>
+                <div class="reports-column-picker-list">
+                    @foreach (var column in Model.AllColumns)
+                    {
+                        <label><input type="checkbox" name="hiddenColumns" value="@column" checked="@Model.HiddenColumns.Contains(column, StringComparer.OrdinalIgnoreCase)" /> @column</label>
+                    }
+                </div>
+            </details>
+            <button type="submit" class="reports-run-button">اعمال تنظیمات <span>↻</span></button>
         </div>
 
         <div class="reports-table-wrap reports-result-table-wrap">
-            <table class="reports-data-table">
-                <thead><tr>@foreach (var column in visibleColumns) { <th>@column</th> }</tr></thead>
+            <table class="reports-data-table" data-report-table>
+                <thead>
+                    <tr class="reports-table-heading-row">
+                        @foreach (var column in visibleColumns)
+                        {
+                            var width = Model.ColumnWidths.TryGetValue(column, out var savedWidth) ? savedWidth : 160;
+                            <th data-column-header="@column" style="width:@(width)px;min-width:90px">
+                                <div class="reports-th-title"><span>@column</span><span class="reports-resize-handle" data-column-resizer aria-hidden="true"></span></div>
+                            </th>
+                        }
+                    </tr>
+                    <tr class="reports-filter-row">
+                        @foreach (var column in visibleColumns)
+                        {
+                            <th>
+                                <input class="reports-column-filter" name="filters[@column]" value="@(Model.Filters.TryGetValue(column, out var filter) ? filter : "")" placeholder="فیلتر @column" aria-label="فیلتر ستون @column" />
+                            </th>
+                        }
+                    </tr>
+                </thead>
                 <tbody>
                 @if (Model.Result.Rows.Count == 0)
                 {
@@ -157,6 +186,33 @@
             <div class="reports-pagination"><span>نمایش تمام @Model.TotalRows.ToString("N0") رکورد</span></div>
         }
     </form>
+
+    <section class="reports-result-details">
+        <div class="reports-result-details-heading"><span class="report-step">REPORT DETAILS</span><h3>جزئیات گزارش و پارامترهای اجرا</h3></div>
+        <div class="reports-result-context">
+            <div class="reports-result-context-title"><span class="reports-connection-status-dot"></span><strong>محل اجرای گزارش</strong></div>
+            <div><small>واحد تجاری</small><strong>@Model.SelectedConnection.VahedetejariDs</strong></div>
+            <div><small>سرور</small><bdi>@Model.SelectedConnection.Server</bdi></div>
+            <div><small>دیتابیس</small><bdi>@Model.SelectedConnection.DataBAset</bdi></div>
+            @if (!string.IsNullOrWhiteSpace(Model.SelectedConnection.ServerIp))
+            {
+                <div><small>IP سرور</small><bdi>@Model.SelectedConnection.ServerIp</bdi></div>
+            }
+        </div>
+        <div class="reports-parameter-details">
+            @if (Model.Values.Count == 0)
+            {
+                <span class="reports-no-parameters">این گزارش پارامتر ورودی نداشته است.</span>
+            }
+            else
+            {
+                @foreach (var item in Model.Values)
+                {
+                    <div><small>@(Model.Report.Parameters.FirstOrDefault(p => string.Equals(p.Name, item.Key, StringComparison.OrdinalIgnoreCase))?.DisplayName ?? item.Key)</small><strong>@(string.IsNullOrWhiteSpace(item.Value) ? "—" : item.Value)</strong></div>
+                }
+            }
+        </div>
+    </section>
 
     <footer class="reports-result-footer"><span>© @DateTime.Now.Year گروه صنعتی مینو</span><span>MINOO WEB REPORTS</span></footer>
 </main>
