@@ -1,0 +1,80 @@
+@model LoginViewModel
+@{
+    ViewData["Title"] = "ورود به سامانه";
+    var orbitCompanies = new[]
+    {
+        new { Name = "گروه مینو", Logo = "holding.png" },
+        new { Name = "پارس مینو", Logo = "parsminoo.png" },
+        new { Name = "قاسم ایران", Logo = "ghasem.jpg" },
+        new { Name = "مینو زاگرس", Logo = "zagros.jpg" },
+        new { Name = "شوکوپارس", Logo = "shocopars.png" },
+        new { Name = "پارس دارو", Logo = "parsdaroo.jpg" },
+        new { Name = "چاشنی", Logo = "chashni.png" },
+        new { Name = "مینو مارت", Logo = "minoomart.jpg" }
+    };
+}
+<main class="login-page">
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    <div class="page-top">
+        <div class="brand-mark">M<span>•</span></div>
+        <div class="brand-copy"><strong>MINOO</strong><span>WEB REPORTS</span></div>
+        <div class="top-caption"><span class="status-dot"></span> درگاه یکپارچه سازمانی</div>
+    </div>
+
+    <section class="login-stage" aria-label="ورود به سامانه">
+        <div class="orbit orbit-one">
+            @for (var i = 0; i < orbitCompanies.Length; i++)
+            {
+                <div class="orbit-item" style="--i:@i; --count:@orbitCompanies.Length">
+                    <div class="company-badge" title="@orbitCompanies[i].Name">
+                        <img src="@Url.Content("~/images/logos/" + orbitCompanies[i].Logo)" alt="@orbitCompanies[i].Name" loading="eager" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />
+                        <span>@orbitCompanies[i].Name</span>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="orbit orbit-two" aria-hidden="true"></div>
+
+        <section class="login-card">
+            <div class="card-topline"><span>MINOO GROUP</span><span class="secure-label"><span>●</span> SECURE ACCESS</span></div>
+            <div class="welcome-icon"><span class="welcome-inner">M</span></div>
+            <p class="eyebrow">به خانواده مینو خوش آمدید</p>
+            <h1>ورود به سامانه</h1>
+            <p class="subtitle">برای ادامه، اطلاعات حساب سازمانی خود را وارد کنید.</p>
+
+            <form asp-controller="Account" asp-action="Login" method="post" class="login-form">
+                @Html.AntiForgeryToken()
+                <input asp-for="ReturnUrl" type="hidden" />
+                <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+                <label asp-for="Username"></label>
+                <div class="input-wrap">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"></circle><path d="M4.5 20c.6-4 3.1-6 7.5-6s6.9 2 7.5 6"></path></svg>
+                    <input asp-for="Username" autocomplete="username" placeholder="نام کاربری سازمانی" />
+                </div>
+                <span asp-validation-for="Username" class="field-error"></span>
+
+                <label asp-for="Password"></label>
+                <div class="input-wrap">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>
+                    <input asp-for="Password" autocomplete="current-password" placeholder="رمز عبور خود را وارد کنید" />
+                    <button class="password-toggle" type="button" data-password-toggle aria-label="نمایش رمز عبور">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.3-6 9.5-6 9.5 6 9.5 6-3.3 6-9.5 6-9.5-6-9.5-6Z"></path><circle cx="12" cy="12" r="2.5"></circle></svg>
+                    </button>
+                </div>
+                <span asp-validation-for="Password" class="field-error"></span>
+
+                <div class="form-options">
+                    <label class="remember-label"><input asp-for="RememberMe" /><span class="custom-check"></span><span>مرا به خاطر بسپار</span></label>
+                    <a asp-controller="Account" asp-action="ForgotPassword" class="forgot-link">فراموشی رمز عبور؟</a>
+                </div>
+
+                <button type="submit" class="submit-button"><span>ورود به سامانه</span><span class="button-arrow">←</span></button>
+            </form>
+            <div class="card-footer"><span class="footer-lock">◇</span> اتصال امن سازمانی <span class="footer-divider"></span> MinooWebReports</div>
+        </section>
+    </section>
+
+    <footer class="page-footer"><span>© @DateTime.Now.Year گروه صنعتی مینو</span><span>یک خانواده، یک مسیر، آینده‌ای روشن</span><span class="footer-version">PORTAL / 01.0</span></footer>
+</main>
