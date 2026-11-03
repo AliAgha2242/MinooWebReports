@@ -40,7 +40,7 @@ MinooWebReports supports both SSO and standalone login:
 
 - When the configured MinooWebCore login page responds successfully, unauthenticated users are redirected to the parent login and returned through the one-time SSO ticket flow.
 - The parent login endpoint is probed with a short timeout. If Core is stopped, unreachable, or returns an unsuccessful response, Reports displays its own login page.
-- Standalone login uses the same credential validation behavior as MinooWebCore: the submitted username is matched against `Users.UserId`, and the stored password is decoded with the same legacy `DecodePass.Security.Decode` routine before ordinal comparison.
+- Standalone login uses the same credential validation behavior as MinooWebCore: the submitted username is matched against `Users.UserCode`, and the stored password is decoded with the same legacy `DecodePass.Security.Decode` routine before ordinal comparison.
 - Configure `ConnectionStrings__CoreAuthentication` to the same database connection string used by MinooWebCore's `ConnectionStrings:DefaultConnection`. This is required for standalone login and must be supplied through environment variables or a secret store.
 - Reports issues its own authentication cookie and includes `UserCode` as a claim so the existing business-unit access query continues to work.
 
