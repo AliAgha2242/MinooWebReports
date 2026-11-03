@@ -12,6 +12,8 @@ public sealed class ReportResultViewModel
     public IReadOnlyList<string> AllColumns { get; set; } = [];
     public List<string> HiddenColumns { get; set; } = [];
     public List<string> GroupColumns { get; set; } = [];
+    public Dictionary<string, int> ColumnWidths { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public string GridTheme { get; set; } = "midnight";
     public string? SortColumn { get; set; }
     public bool SortDescending { get; set; }
     public int Page { get; set; } = 1;
