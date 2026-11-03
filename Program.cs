@@ -1,6 +1,5 @@
 using MinooWebReports.Services;
 using MinooWebReports.Persistence.StaticConfiguration;
-using MinooWebReports.Security;
 using StackExchange.Redis;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
