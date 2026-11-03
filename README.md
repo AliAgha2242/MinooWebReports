@@ -34,6 +34,22 @@ The report-target connection factory currently uses Windows Integrated Security.
 
 The shared Minoo server configuration file must be available beside the published application as `AppConfig.json` (or set `MinooConfiguration__FilePath` to its full path). The file must contain a `ServersInfo` array with `ServerName` (or `Ip`), `databaseName`, and `VahedeTejariSN`. An optional business-unit display name is read from `VahedetejariDs`, `VahedeTejariDs`, `VahedeTejariDS`, `VahedeTejariName`, `BusinessUnitName`, `UnitName`, or `Name`. The configuration file is environment-specific and must not be committed with secrets.
 
+## Authentication and single sign-on
+
+MinooWebReports supports both SSO and standalone login:
+
+- When the configured MinooWebCore login page responds successfully, unauthenticated users are redirected to the parent login and returned through the one-time SSO ticket flow.
+- The parent login endpoint is probed with a short timeout. If Core is stopped, unreachable, or returns an unsuccessful response, Reports displays its own login page.
+- Standalone login uses the same credential validation behavior as MinooWebCore: the submitted username is matched against `Users.UserId`, and the stored password is decoded with the same legacy `DecodePass.Security.Decode` routine before ordinal comparison.
+- Configure `ConnectionStrings__CoreAuthentication` to the same database connection string used by MinooWebCore's `ConnectionStrings:DefaultConnection`. This is required for standalone login and must be supplied through environment variables or a secret store.
+- Reports issues its own authentication cookie and includes `UserCode` as a claim so the existing business-unit access query continues to work.
+
+Example:
+
+```text
+ConnectionStrings__CoreAuthentication=<same database connection string as MinooWebCore>
+```
+
 ## Single sign-on configuration
 
 Configure these values on the Reports deployment. The client secret must be a high-entropy secret shared with MinooWebCore and supplied through a secret store or environment variable, never committed to source control:
@@ -45,7 +61,7 @@ Sso__Parent__RedeemUrl=https://<minoo-webcore-host>/api/sso/reports/redeem
 Sso__Parent__ClientSecret=<shared-secret>
 ```
 
-MinooWebReports accepts a short-lived one-time ticket from the parent application, redeems it server-to-server, and issues its own secure authentication cookie. Direct access redirects to the parent login. Both applications must use HTTPS and share the same secret.
+MinooWebReports accepts a short-lived one-time ticket from the parent application, redeems it server-to-server, and issues its own secure authentication cookie. When the parent is reachable, direct access redirects to its login. When it is unavailable, local login remains available. The SSO ticket flow still requires the shared client secret.
 
 Business-unit choices are loaded from the user's `UserCode` access rows for `ApplicationID = '5'`; only units also present in `ServersInfo` are offered. The selected unit is revalidated against the user's current access list on report execution.
 
@@ -96,7 +112,7 @@ Preferences include page size, hidden columns, filters and sorting, scoped to th
 
 - Give the report execution identity **SELECT-only permissions** on report databases. The SQL text gate is defense-in-depth, not a substitute for database permissions.
 - Never grant report users write access to target databases.
-- Per-user authentication through MinooWebCore SSO and per-request business-unit access validation are integrated. Per-report authorization policies still need to be defined.
+- Per-user authentication through MinooWebCore SSO or standalone credential validation, plus per-request business-unit access validation. Per-report authorization policies still need to be defined.
 - Store connection strings and credentials in environment variables or a secret store, never in source control.
 - The metadata connection string must be configured as `ConnectionStrings__ReportsMetadata`; it is intentionally not hard-coded.
 - The Minoo `AppConfig.json` server directory must be present and maintained in each deployment environment.
