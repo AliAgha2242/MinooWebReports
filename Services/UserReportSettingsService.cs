@@ -54,6 +54,15 @@ public sealed class UserReportSettingsService(
             .Take(3)
             .ToList();
 
+        preferences.ColumnWidths = preferences.ColumnWidths
+            .Where(x => !string.IsNullOrWhiteSpace(x.Key))
+            .Take(200)
+            .ToDictionary(x => x.Key, x => Math.Clamp(x.Value, 90, 800), StringComparer.OrdinalIgnoreCase);
+
+        preferences.Theme = preferences.Theme is "midnight" or "light" or "ocean" or "contrast"
+            ? preferences.Theme
+            : "midnight";
+
         var json = JsonSerializer.Serialize(preferences, JsonOptions);
         await _database.StringSetAsync(CreateKey(reportId), json);
     }
