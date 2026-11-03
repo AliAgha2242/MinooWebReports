@@ -154,8 +154,7 @@ public sealed class SqlReportExecutionService(
             CommandBehavior.SequentialAccess, cancellationToken);
 
         for (var i = 0; i < reader.FieldCount; i++)
-            table.Columns.Add(reader.GetName(i), Nullable.GetUnderlyingType(reader.GetFieldType(i))
-                ?? reader.GetFieldType(i));
+            table.Columns.Add(reader.GetName(i), typeof(string));
 
         while (await reader.ReadAsync(cancellationToken))
         {
@@ -165,9 +164,20 @@ public sealed class SqlReportExecutionService(
 
             var row = table.NewRow();
             for (var i = 0; i < reader.FieldCount; i++)
-                row[i] = await reader.IsDBNullAsync(i, cancellationToken)
-                    ? DBNull.Value
-                    : reader.GetValue(i);
+            {
+                if (await reader.IsDBNullAsync(i, cancellationToken))
+                {
+                    row[i] = DBNull.Value;
+                    continue;
+                }
+
+                var value = reader.GetValue(i);
+                row[i] = value is byte[] bytes
+                    ? Convert.ToBase64String(bytes)
+                    : Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture)
+                        ?? string.Empty;
+            }
+
             table.Rows.Add(row);
         }
 
