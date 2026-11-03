@@ -95,6 +95,7 @@ public sealed class ReportsController(
         bool sortDescending,
         List<string>? hiddenColumns,
         List<string>? groupColumns,
+        bool groupColumnsSubmitted = false,
         bool hiddenColumnsSubmitted = false,
         int page = 1,
         int? pageSize = null,
@@ -128,7 +129,7 @@ public sealed class ReportsController(
             sortColumn = savedPreferences.SortColumn;
         if (!Request.Form.ContainsKey("sortDescending"))
             sortDescending = savedPreferences.SortDescending;
-        if (!Request.Form.ContainsKey("groupColumns"))
+        if (!groupColumnsSubmitted)
             groupColumns = savedPreferences.GroupColumns;
 
         try
