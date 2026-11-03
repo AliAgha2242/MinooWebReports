@@ -169,6 +169,13 @@
                 </tbody>
             </table>
         </div>
+        @foreach (var column in Model.AllColumns.Where(column => Model.HiddenColumns.Contains(column, StringComparer.OrdinalIgnoreCase)))
+        {
+            if (Model.Filters.TryGetValue(column, out var hiddenFilter))
+            {
+                <input type="hidden" name="filters[@column]" value="@hiddenFilter" />
+            }
+        }
 
         @if (Model.Report.NeedsPagination)
         {
