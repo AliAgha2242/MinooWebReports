@@ -75,8 +75,13 @@ public sealed class SsoController(
         }
         catch (HttpRequestException ex)
         {
-            logger.LogError(ex, "Parent SSO ticket redemption failed.");
-            return StatusCode(StatusCodes.Status503ServiceUnavailable);
+            logger.LogWarning(ex, "Parent SSO is unavailable; showing the local Reports login.");
+            return RedirectToAction("Login", "Account");
+        }
+        catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            logger.LogWarning(ex, "Parent SSO redemption timed out; showing the local Reports login.");
+            return RedirectToAction("Login", "Account");
         }
     }
 }
