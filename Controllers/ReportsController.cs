@@ -94,6 +94,7 @@ public sealed class ReportsController(
         string? sortColumn,
         bool sortDescending,
         List<string>? hiddenColumns,
+        List<string>? groupColumns,
         bool hiddenColumnsSubmitted = false,
         int page = 1,
         int? pageSize = null,
@@ -127,6 +128,8 @@ public sealed class ReportsController(
             sortColumn = savedPreferences.SortColumn;
         if (!Request.Form.ContainsKey("sortDescending"))
             sortDescending = savedPreferences.SortDescending;
+        if (!Request.Form.ContainsKey("groupColumns"))
+            groupColumns = savedPreferences.GroupColumns;
 
         try
         {
@@ -139,6 +142,12 @@ public sealed class ReportsController(
                 .Where(pair => validColumns.Contains(pair.Key, StringComparer.OrdinalIgnoreCase))
                 .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase);
 
+            groupColumns = (groupColumns ?? [])
+                .Where(column => validColumns.Contains(column, StringComparer.OrdinalIgnoreCase))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(3)
+                .ToList();
+
             var filteredRows = raw.AsEnumerable().Where(row => filters.All(filter =>
                 string.IsNullOrWhiteSpace(filter.Value) ||
                 Convert.ToString(row[filter.Key], System.Globalization.CultureInfo.CurrentCulture)?
@@ -148,14 +157,29 @@ public sealed class ReportsController(
             foreach (var row in filteredRows)
                 filtered.ImportRow(row);
 
+            // Grouping is a presentation operation: sort by group keys first, then by the user's sort.
+            // All column names are checked against the actual result schema before entering DataView.Sort.
+            var sortTerms = new List<string>();
+            foreach (var groupColumn in groupColumns)
+            {
+                var safeGroupColumn = groupColumn.Replace("]", "]]", StringComparison.Ordinal);
+                sortTerms.Add($"[{safeGroupColumn}] ASC");
+            }
+
             if (!string.IsNullOrWhiteSpace(sortColumn) &&
                 validColumns.Contains(sortColumn, StringComparer.OrdinalIgnoreCase))
             {
                 var safeColumn = sortColumn.Replace("]", "]]", StringComparison.Ordinal);
-                var view = new DataView(filtered)
-                {
-                    Sort = $"[{safeColumn}] {(sortDescending ? "DESC" : "ASC")}"
-                };
+                var direction = sortDescending ? "DESC" : "ASC";
+                var existingSort = groupColumns.Any(column =>
+                    string.Equals(column, sortColumn, StringComparison.OrdinalIgnoreCase));
+                if (!existingSort)
+                    sortTerms.Add($"[{safeColumn}] {direction}");
+            }
+
+            if (sortTerms.Count > 0)
+            {
+                var view = new DataView(filtered) { Sort = string.Join(", ", sortTerms) };
                 filtered = view.ToTable();
             }
 
@@ -185,7 +209,8 @@ public sealed class ReportsController(
                 ColumnFilters = filters.Where(x => !string.IsNullOrWhiteSpace(x.Value))
                     .ToDictionary(x => x.Key, x => x.Value!, StringComparer.OrdinalIgnoreCase),
                 SortColumn = sortColumn,
-                SortDescending = sortDescending
+                SortDescending = sortDescending,
+                GroupColumns = groupColumns
             }, cancellationToken);
 
             return View("Result", new ReportResultViewModel
@@ -197,6 +222,7 @@ public sealed class ReportsController(
                 Result = paged,
                 AllColumns = validColumns,
                 HiddenColumns = hidden,
+                GroupColumns = groupColumns,
                 SortColumn = sortColumn,
                 SortDescending = sortDescending,
                 Page = page,
