@@ -10,4 +10,5 @@ public sealed class GridPreferences
     public Dictionary<string, string> ColumnFilters { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public string? SortColumn { get; set; }
     public bool SortDescending { get; set; }
+    public List<string> GroupColumns { get; set; } = [];
 }
