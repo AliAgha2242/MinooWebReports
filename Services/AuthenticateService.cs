@@ -1,5 +1,4 @@
 using System.Data;
-using System.Globalization;
 using Microsoft.Data.SqlClient;
 using Decode;
 
@@ -20,7 +19,7 @@ public sealed class AuthenticateService(IConfiguration configuration) : IAuthent
     private const string UserSql = """
         SELECT TOP (1) UserId, UserName, UserPassword, UserCode
         FROM dbo.Users
-        WHERE UserId = @UserId;
+        WHERE UserCode = @UserCode;
         """;
 
     public async Task<AuthenticatedUser?> ValidateCredentialsAsync(
@@ -28,8 +27,8 @@ public sealed class AuthenticateService(IConfiguration configuration) : IAuthent
         string password,
         CancellationToken cancellationToken = default)
     {
-        // This deliberately follows MinooWebCore: the login identifier is Users.UserId.
-        if (!int.TryParse(username, NumberStyles.Integer, CultureInfo.InvariantCulture, out var userId))
+        // Match the current MinooWebCore implementation: the login identifier is Users.UserCode.
+        if (string.IsNullOrWhiteSpace(username))
             return null;
 
         var connectionString = configuration.GetConnectionString("CoreAuthentication");
@@ -45,7 +44,7 @@ public sealed class AuthenticateService(IConfiguration configuration) : IAuthent
             CommandType = CommandType.Text,
             CommandTimeout = 15
         };
-        command.Parameters.Add("@UserId", SqlDbType.Int).Value = userId;
+        command.Parameters.Add("@UserCode", SqlDbType.NVarChar, 100).Value = username.Trim();
 
         await using var reader = await command.ExecuteReaderAsync(
             CommandBehavior.SingleRow, cancellationToken);
@@ -78,12 +77,12 @@ public sealed class AuthenticateService(IConfiguration configuration) : IAuthent
             : reader.GetString(reader.GetOrdinal("UserName"));
         var userCode = reader.IsDBNull(reader.GetOrdinal("UserCode"))
             ? string.Empty
-            : Convert.ToString(reader.GetValue(reader.GetOrdinal("UserCode")), CultureInfo.InvariantCulture)
-                ?? string.Empty;
+            : Convert.ToString(reader.GetValue(reader.GetOrdinal("UserCode"))) ?? string.Empty;
 
         if (string.IsNullOrWhiteSpace(userCode))
             return null;
 
-        return new AuthenticatedUser(userId, name, userCode);
+        var authenticatedUserId = reader.GetInt32(reader.GetOrdinal("UserId"));
+        return new AuthenticatedUser(authenticatedUserId, name, userCode);
     }
 }
