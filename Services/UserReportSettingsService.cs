@@ -48,6 +48,12 @@ public sealed class UserReportSettingsService(
             .Take(200)
             .ToList();
 
+        preferences.GroupColumns = preferences.GroupColumns
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(3)
+            .ToList();
+
         var json = JsonSerializer.Serialize(preferences, JsonOptions);
         await _database.StringSetAsync(CreateKey(reportId), json);
     }
