@@ -9,7 +9,7 @@
             ? "—"
             : Convert.ToString(row[column], System.Globalization.CultureInfo.CurrentCulture) ?? "—";
 }
-<main class="reports-result-page" data-report-grid data-report-id="@Model.Report.Id" data-grid-theme="@Model.GridTheme">
+<main class="reports-result-page" data-report-grid data-report-id="@Model.Report.Id" data-grid-user="@(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "browser")" data-grid-theme="@Model.GridTheme">
     <header class="reports-result-header">
         <a class="admin-brand" asp-controller="Home" asp-action="Index"><span class="brand-mark">M<span>•</span></span><span class="brand-copy"><strong>MINOO</strong><span>WEB REPORTS</span></span></a>
         <div class="reports-result-header-title">
