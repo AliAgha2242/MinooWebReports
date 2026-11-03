@@ -86,8 +86,9 @@ dotnet run
   - Radio/list options can be static JSON (`Options`) or loaded from a read-only `DataSource` SELECT query using `ValueField` and `DisplayNameField`.
 - Parameterized SQL report execution against the selected business unit.
 - Read-only SELECT-only query gate, command timeout and maximum row count.
-- Read-only results grid with per-column filtering, sorting, column visibility and optional pagination.
-- Per-user/per-report grid preferences stored in Redis.
+- Read-only results grid with per-column filtering, sorting, column visibility, optional pagination and multi-level grouping (up to three columns).
+- Grouping is applied after filtering and before pagination; group keys are sorted ascending to keep each group's rows together. A group that crosses a page boundary is shown with its heading again on the next page.
+- Per-user/per-report grid preferences, including grouping columns, are stored in Redis.
 
 ## Metadata database
 
@@ -106,7 +107,7 @@ Authenticated users use:
 MinooWebReports:UserReport:{userId}:{reportId}
 ```
 
-Preferences include page size, hidden columns, filters and sorting, scoped to the authenticated user's report workspace.
+Preferences include page size, hidden columns, filters, sorting and up to three grouping columns, scoped to the authenticated user's report workspace.
 
 ## Production security requirements
 
