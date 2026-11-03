@@ -109,26 +109,29 @@
                 }
                 else
                 {
-                    var previousGroupValues = new string?[Model.GroupColumns.Count];
+                    var previousGroupValues = new object?[Model.GroupColumns.Count];
+                    var hasPreviousGroupValues = new bool[Model.GroupColumns.Count];
                     @foreach (System.Data.DataRow row in Model.Result.Rows)
                     {
                         @for (var level = 0; level < Model.GroupColumns.Count; level++)
                         {
                             var groupColumn = Model.GroupColumns[level];
-                            var currentGroupValue = DisplayCell(row, groupColumn);
-                            if (!string.Equals(previousGroupValues[level], currentGroupValue, StringComparison.Ordinal))
+                            var currentGroupValue = row[groupColumn];
+                            if (!hasPreviousGroupValues[level] || !Equals(previousGroupValues[level], currentGroupValue))
                             {
                                 for (var deeperLevel = level + 1; deeperLevel < previousGroupValues.Length; deeperLevel++)
                                 {
+                                    hasPreviousGroupValues[deeperLevel] = false;
                                     previousGroupValues[deeperLevel] = null;
                                 }
                                 <tr class="reports-group-row">
                                     <td colspan="@Math.Max(1, visibleColumns.Count)">
                                         <span class="reports-group-level">گروه @((level + 1).ToString()) · @groupColumn</span>
-                                        <strong>@currentGroupValue</strong>
+                                        <strong>@DisplayCell(row, groupColumn)</strong>
                                     </td>
                                 </tr>
                                 previousGroupValues[level] = currentGroupValue;
+                                hasPreviousGroupValues[level] = true;
                             }
                         }
                         <tr>@foreach (var column in visibleColumns) { <td>@DisplayCell(row, column)</td> }</tr>
