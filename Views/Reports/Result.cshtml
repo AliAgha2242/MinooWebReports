@@ -3,6 +3,12 @@
     ViewData["Title"] = "نتیجه " + Model.Report.Name;
     var visibleColumns = Model.AllColumns.Where(column => !Model.HiddenColumns.Contains(column, StringComparer.OrdinalIgnoreCase)).ToList();
 }
+@functions {
+    private static string DisplayCell(System.Data.DataRow row, string column) =>
+        row[column] is DBNull
+            ? "—"
+            : Convert.ToString(row[column], System.Globalization.CultureInfo.CurrentCulture) ?? "—";
+}
 <main class="reports-result-page">
     <header class="reports-result-header">
         <a class="admin-brand" asp-controller="Home" asp-action="Index"><span class="brand-mark">M<span>•</span></span><span class="brand-copy"><strong>MINOO</strong><span>WEB REPORTS</span></span></a>
@@ -34,13 +40,14 @@
         @Html.AntiForgeryToken()
         <input type="hidden" name="id" value="@Model.Report.Id" />
         <input type="hidden" name="hiddenColumnsSubmitted" value="true" />
+        <input type="hidden" name="groupColumnsSubmitted" value="true" />
         @foreach (var item in Model.Values)
         {
             <input type="hidden" name="submittedValues[@item.Key]" value="@item.Value" />
         }
 
         <div class="reports-grid-toolbar">
-            <div><span class="report-step">GRID SETTINGS</span><h3>فیلتر و تنظیم ستون‌ها</h3></div>
+            <div><span class="report-step">GRID SETTINGS</span><h3>فیلتر، گروه‌بندی و تنظیم ستون‌ها</h3></div>
             @if (Model.Report.NeedsPagination)
             {
                 <label>تعداد در صفحه
@@ -69,6 +76,15 @@
                     <input class="reports-input" name="filters[@column]" value="@(Model.Filters.TryGetValue(column, out var filter) ? filter : "")" placeholder="فیلتر..." />
                 </label>
             }
+            <label>گروه‌بندی بر اساس
+                <select name="groupColumns" class="reports-input" multiple size="4" aria-label="ستون‌های گروه‌بندی">
+                    @foreach (var column in Model.AllColumns)
+                    {
+                        <option value="@column" selected="@Model.GroupColumns.Contains(column, StringComparer.OrdinalIgnoreCase)">@column</option>
+                    }
+                </select>
+                <small class="reports-field-hint">حداکثر سه ستون؛ ترتیب انتخاب، ترتیب گروه‌بندی را تعیین می‌کند. برای لغو گروه‌بندی، همه گزینه‌ها را از انتخاب خارج کنید.</small>
+            </label>
             <label>مرتب‌سازی بر اساس
                 <select name="sortColumn" class="reports-input">
                     <option value="">بدون مرتب‌سازی</option>
@@ -93,9 +109,29 @@
                 }
                 else
                 {
+                    var previousGroupValues = new string?[Model.GroupColumns.Count];
                     @foreach (System.Data.DataRow row in Model.Result.Rows)
                     {
-                        <tr>@foreach (var column in visibleColumns) { <td>@(row[column] is DBNull ? "—" : Convert.ToString(row[column], System.Globalization.CultureInfo.CurrentCulture))</td> }</tr>
+                        @for (var level = 0; level < Model.GroupColumns.Count; level++)
+                        {
+                            var groupColumn = Model.GroupColumns[level];
+                            var currentGroupValue = DisplayCell(row, groupColumn);
+                            if (!string.Equals(previousGroupValues[level], currentGroupValue, StringComparison.Ordinal))
+                            {
+                                for (var deeperLevel = level + 1; deeperLevel < previousGroupValues.Length; deeperLevel++)
+                                {
+                                    previousGroupValues[deeperLevel] = null;
+                                }
+                                <tr class="reports-group-row">
+                                    <td colspan="@Math.Max(1, visibleColumns.Count)">
+                                        <span class="reports-group-level">گروه @((level + 1).ToString()) · @groupColumn</span>
+                                        <strong>@currentGroupValue</strong>
+                                    </td>
+                                </tr>
+                                previousGroupValues[level] = currentGroupValue;
+                            }
+                        }
+                        <tr>@foreach (var column in visibleColumns) { <td>@DisplayCell(row, column)</td> }</tr>
                     }
                 }
                 </tbody>
