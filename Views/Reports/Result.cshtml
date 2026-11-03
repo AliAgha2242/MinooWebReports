@@ -25,7 +25,7 @@
         <input type="hidden" name="id" value="@Model.Report.Id" />
         <input type="hidden" name="hiddenColumnsSubmitted" value="true" />
         <input type="hidden" name="groupColumnsSubmitted" value="true" />
-        <input type="hidden" name="columnWidthsJson" value="" data-column-widths />
+        <input type="hidden" name="columnWidthsJson" value="@System.Text.Json.JsonSerializer.Serialize(Model.ColumnWidths)" data-column-widths />
         <input type="hidden" name="gridTheme" value="@Model.GridTheme" data-grid-theme-input />
         @foreach (var item in Model.Values)
         {
