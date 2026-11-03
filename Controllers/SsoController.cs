@@ -32,8 +32,8 @@ public sealed class SsoController(
         if (!Uri.TryCreate(redeemUrl, UriKind.Absolute, out var redeemUri) ||
             (redeemUri.Scheme != Uri.UriSchemeHttp && redeemUri.Scheme != Uri.UriSchemeHttps) || string.IsNullOrWhiteSpace(clientSecret))
         {
-            logger.LogError("Parent SSO redemption endpoint must be an absolute HTTP or HTTPS URL and the client secret must be configured.");
-            return StatusCode(StatusCodes.Status503ServiceUnavailable);
+            logger.LogWarning("Parent SSO is not configured; showing the local Reports login.");
+            return RedirectToAction("Login", "Account");
         }
 
         try
@@ -45,8 +45,15 @@ public sealed class SsoController(
             request.Headers.TryAddWithoutValidation("X-Reports-Client-Secret", clientSecret);
             using var response = await httpClientFactory.CreateClient("MinooWebCore")
                 .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            if (!response.IsSuccessStatusCode)
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 return Unauthorized();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                logger.LogWarning("Parent SSO returned {StatusCode}; showing the local Reports login.",
+                    (int)response.StatusCode);
+                return RedirectToAction("Login", "Account");
+            }
 
             var user = await response.Content.ReadFromJsonAsync<SsoUserResponse>(cancellationToken: cancellationToken);
             if (user is null || string.IsNullOrWhiteSpace(user.UserId) ||
