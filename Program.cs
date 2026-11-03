@@ -1,11 +1,17 @@
 using MinooWebReports.Services;
 using MinooWebReports.Persistence.StaticConfiguration;
+using MinooWebReports.Security;
 using StackExchange.Redis;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
-builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme)
+builder.Services.AddScoped<IAuthenticateService, AuthenticateService>();
+
+builder.Services
+    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.Cookie.Name = ".MinooWebReports.Auth";
@@ -13,24 +19,57 @@ builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.C
         options.Cookie.IsEssential = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.LoginPath = "/Account/Login";
+        options.AccessDeniedPath = "/Account/AccessDenied";
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
-        options.Events.OnRedirectToLogin = context =>
+        options.Events.OnRedirectToLogin = async context =>
         {
             var parentLogin = builder.Configuration["Sso:Parent:LoginUrl"];
             var launchPath = builder.Configuration["Sso:Parent:LaunchPath"] ?? "/Account/LaunchReports";
-            if (string.IsNullOrWhiteSpace(parentLogin))
+
+            // Prefer the parent SSO only when its login endpoint is reachable.
+            // If Core is stopped or unreachable, fall back to the local Reports login.
+            if (Uri.TryCreate(parentLogin, UriKind.Absolute, out var parentUri) &&
+                (parentUri.Scheme == Uri.UriSchemeHttp || parentUri.Scheme == Uri.UriSchemeHttps))
             {
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                return Task.CompletedTask;
+                try
+                {
+                    using var timeout = CancellationTokenSource.CreateLinkedTokenSource(
+                        context.HttpContext.RequestAborted);
+                    timeout.CancelAfter(TimeSpan.FromSeconds(2));
+
+                    var clients = context.HttpContext.RequestServices.GetRequiredService<IHttpClientFactory>();
+                    using var probe = await clients.CreateClient("MinooWebCore")
+                        .GetAsync(parentUri, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
+
+                    if (probe.IsSuccessStatusCode)
+                    {
+                        var separator = parentLogin!.Contains('?') ? "&" : "?";
+                        context.Response.Redirect(
+                            $"{parentLogin}{separator}returnUrl={Uri.EscapeDataString(launchPath)}");
+                        return;
+                    }
+                }
+                catch (HttpRequestException)
+                {
+                    // Parent is unavailable; continue to local login.
+                }
+                catch (TaskCanceledException) when (!context.HttpContext.RequestAborted.IsCancellationRequested)
+                {
+                    // Parent health probe timed out; continue to local login.
+                }
             }
-            var separator = parentLogin.Contains('?') ? "&" : "?";
-            context.Response.Redirect($"{parentLogin}{separator}returnUrl={Uri.EscapeDataString(launchPath)}");
-            return Task.CompletedTask;
+
+            context.Response.Redirect(context.RedirectUri);
         };
     });
+
 builder.Services.AddAuthorization();
-builder.Services.AddHttpClient("MinooWebCore");
+builder.Services.AddHttpClient("MinooWebCore", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(5);
+});
 builder.Services.AddHttpContextAccessor();
 
 var minooConfigFileName = builder.Configuration["MinooConfiguration:FileName"] ?? "AppConfig.json";
