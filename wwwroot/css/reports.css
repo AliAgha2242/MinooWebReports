@@ -109,3 +109,13 @@
  .reports-result-workspace { padding:13px; }
  .reports-result-table-wrap { max-height:65vh; }
 }
+
+
+/* Read-only report grid grouping */
+.reports-grid-filters select[multiple] { min-height:112px; padding:7px; }
+.reports-grid-filters .reports-field-hint { color:#7898ad; font-size:9px; line-height:1.8; }
+.reports-data-table tbody tr.reports-group-row { background:rgba(35,126,151,.17)!important; }
+.reports-data-table tbody tr.reports-group-row:hover { background:rgba(35,126,151,.22)!important; }
+.reports-data-table .reports-group-row td { padding:10px 13px; border-top:1px solid rgba(105,224,223,.2); border-bottom:1px solid rgba(105,224,223,.12); white-space:normal; }
+.reports-group-level { display:inline-block; margin-left:10px; color:#75cbd3; font-size:9px; }
+.reports-group-row strong { color:#e6f6fb; font-size:11px; font-weight:700; }
