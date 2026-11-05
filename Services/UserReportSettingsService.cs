@@ -24,8 +24,10 @@ public sealed class UserReportSettingsService(
 
         try
         {
-            return JsonSerializer.Deserialize<GridPreferences>((string)value!, JsonOptions)
+            var preferences = JsonSerializer.Deserialize<GridPreferences>((string)value!, JsonOptions)
                 ?? new GridPreferences();
+            Normalize(preferences);
+            return preferences;
         }
         catch (JsonException)
         {
@@ -40,6 +42,8 @@ public sealed class UserReportSettingsService(
     {
         ValidateReportId(reportId);
         ArgumentNullException.ThrowIfNull(preferences);
+
+        Normalize(preferences);
 
         preferences.PageSize = Math.Clamp(preferences.PageSize, 10, 200);
         preferences.HiddenColumns = preferences.HiddenColumns
@@ -65,6 +69,14 @@ public sealed class UserReportSettingsService(
 
         var json = JsonSerializer.Serialize(preferences, JsonOptions);
         await _database.StringSetAsync(CreateKey(reportId), json);
+    }
+
+    private static void Normalize(GridPreferences preferences)
+    {
+        preferences.HiddenColumns ??= [];
+        preferences.GroupColumns ??= [];
+        preferences.ColumnWidths ??= new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        preferences.ColumnFilters ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     }
 
     private RedisKey CreateKey(int reportId)
