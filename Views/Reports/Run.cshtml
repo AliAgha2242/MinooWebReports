@@ -120,6 +120,13 @@
                             {
                                 var selectedValues = (currentValue ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                                 <div class="reports-searchable-listbox" data-searchable-listbox>
+                                    <button type="button" class="reports-input reports-listbox-trigger"
+                                            data-listbox-trigger aria-expanded="false"
+                                            aria-label="انتخاب موارد برای @parameter.DisplayName">
+                                        <span data-listbox-selection-label>انتخاب کنید...</span>
+                                        <span class="reports-listbox-chevron" aria-hidden="true">⌄</span>
+                                    </button>
+                                    <div class="reports-listbox-dropdown" data-listbox-dropdown hidden>
                                     <input type="search" class="reports-input reports-listbox-search" data-listbox-search
                                            placeholder="جست‌وجو در گزینه‌ها..." aria-label="جست‌وجو در @parameter.DisplayName"
                                            autocomplete="off" />
@@ -142,6 +149,7 @@
                                         {
                                             <input type="hidden" name="submittedValues[@parameter.Name]" value="@selectedValue" />
                                         }
+                                    </div>
                                     </div>
                                     <small class="reports-field-hint" data-listbox-status>
                                         @if (options.Count > 100)
