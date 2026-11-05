@@ -38,17 +38,7 @@
                 <h2> @Model.Report.Name </h2>
                 <p>@Model.TotalRows.ToString("N0") رکورد · صفحه @Model.Page از @Model.TotalPages</p>
             </div>
-            <div class="reports-grid-actions">
-                <label class="reports-theme-picker">قالب نمایش
-                    <select class="reports-input" data-grid-theme-picker aria-label="انتخاب تم گزارش">
-                        <option value="midnight" selected="@(Model.GridTheme == "midnight")">نیمه‌شب</option>
-                        <option value="light" selected="@(Model.GridTheme == "light")">روشن</option>
-                        <option value="ocean" selected="@(Model.GridTheme == "ocean")">اقیانوسی</option>
-                        <option value="contrast" selected="@(Model.GridTheme == "contrast")">کنتراست بالا</option>
-                    </select>
-                </label>
 
-            </div>
         </div>
 
         <details class="reports-grouping-panel" aria-label="گروه‌بندی ستون‌ها">
@@ -80,6 +70,14 @@
         <input type="hidden" name="sortColumn" value="@Model.SortColumn" data-sort-column-input />
         <input type="hidden" name="sortDescending" value="@Model.SortDescending.ToString().ToLowerInvariant()" data-sort-direction-input />
         <div class="reports-grid-controls">
+            <label class="reports-theme-picker">قالب نمایش
+                <select class="reports-input" data-grid-theme-picker aria-label="انتخاب تم گزارش">
+                    <option value="midnight" selected="@(Model.GridTheme == "midnight")">نیمه‌شب</option>
+                    <option value="light" selected="@(Model.GridTheme == "light")">روشن</option>
+                    <option value="ocean" selected="@(Model.GridTheme == "ocean")">اقیانوسی</option>
+                    <option value="contrast" selected="@(Model.GridTheme == "contrast")">کنتراست بالا</option>
+                </select>
+            </label>
             <details class="reports-column-picker">
                 <summary><span class="reports-column-picker-title">ستون‌ها</span><span class="reports-column-picker-count">@Model.HiddenColumns.Count پنهان</span></summary>
                 <div class="reports-column-picker-list">
