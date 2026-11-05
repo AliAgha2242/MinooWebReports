@@ -12,33 +12,51 @@
         });
     });
 
-    // Searchable multi-select listboxes: show the first 100 options initially,
-    // then search across the complete option collection without clearing selections.
-    // Fixed-height searchable checkbox listboxes with hidden form values.
+    // Collapsible searchable multi-select dropdowns.
     document.querySelectorAll("[data-searchable-listbox]").forEach(container => {
+        const trigger = container.querySelector("[data-listbox-trigger]");
+        const dropdown = container.querySelector("[data-listbox-dropdown]");
         const search = container.querySelector("[data-listbox-search]");
         const list = container.querySelector("[data-listbox-options]");
         const status = container.querySelector("[data-listbox-status]");
         const hiddenInputs = container.querySelector("[data-listbox-hidden-inputs]");
-        if (!search || !list || !hiddenInputs) return;
+        const selectionLabel = container.querySelector("[data-listbox-selection-label]");
+        if (!trigger || !dropdown || !search || !list || !hiddenInputs) return;
 
         const items = Array.from(list.querySelectorAll("[data-listbox-option]"));
         const initialLimit = 100;
         const normalize = value => String(value ?? "").trim().toLocaleLowerCase();
+        const selectedItems = () => items.filter(item => item.querySelector("[data-listbox-checkbox]")?.checked);
 
+        const closeDropdown = () => {
+            dropdown.hidden = true;
+            trigger.setAttribute("aria-expanded", "false");
+            container.classList.remove("is-open");
+        };
+        const openDropdown = () => {
+            dropdown.hidden = false;
+            trigger.setAttribute("aria-expanded", "true");
+            container.classList.add("is-open");
+            renderOptions();
+            search.focus();
+        };
         const syncSelectedValues = () => {
             hiddenInputs.replaceChildren();
-            items.filter(item => item.querySelector("[data-listbox-checkbox]")?.checked)
-                .forEach(item => {
-                    const checkbox = item.querySelector("[data-listbox-checkbox]");
-                    const input = document.createElement("input");
-                    input.type = "hidden";
-                    input.name = list.dataset.fieldName;
-                    input.value = checkbox.value;
-                    hiddenInputs.appendChild(input);
-                });
+            selectedItems().forEach(item => {
+                const checkbox = item.querySelector("[data-listbox-checkbox]");
+                const input = document.createElement("input");
+                input.type = "hidden";
+                input.name = list.dataset.fieldName;
+                input.value = checkbox.value;
+                hiddenInputs.appendChild(input);
+            });
+            if (selectionLabel) {
+                const selected = selectedItems();
+                selectionLabel.textContent = selected.length
+                    ? `${selected.length} مورد انتخاب شده`
+                    : "انتخاب کنید...";
+            }
         };
-
         const renderOptions = () => {
             const query = normalize(search.value);
             const matches = items.filter(item => normalize(item.dataset.searchText).includes(query));
@@ -48,9 +66,8 @@
                 const checkbox = item.querySelector("[data-listbox-checkbox]");
                 item.hidden = !visibleSet.has(item) && !checkbox.checked;
             });
-
             if (status) {
-                const selectedCount = items.filter(item => item.querySelector("[data-listbox-checkbox]")?.checked).length;
+                const selectedCount = selectedItems().length;
                 const shownCount = visibleItems.length + items.filter(item =>
                     item.querySelector("[data-listbox-checkbox]")?.checked && !visibleSet.has(item)).length;
                 status.textContent = query
@@ -59,14 +76,29 @@
             }
         };
 
+        trigger.addEventListener("click", () => {
+            if (dropdown.hidden) openDropdown();
+            else closeDropdown();
+        });
         list.addEventListener("change", event => {
             if (!event.target.matches("[data-listbox-checkbox]")) return;
             syncSelectedValues();
             renderOptions();
+            closeDropdown();
         });
         search.addEventListener("input", renderOptions);
+        search.addEventListener("keydown", event => {
+            if (event.key === "Escape") {
+                closeDropdown();
+                trigger.focus();
+            }
+        });
+        document.addEventListener("pointerdown", event => {
+            if (!container.contains(event.target)) closeDropdown();
+        });
         syncSelectedValues();
         renderOptions();
+        closeDropdown();
     });
 
     const toggle = document.querySelector("[data-password-toggle]");
