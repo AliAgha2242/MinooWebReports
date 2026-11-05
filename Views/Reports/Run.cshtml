@@ -119,13 +119,29 @@
                             else if (parameter.Type == "ListBox")
                             {
                                 var selectedValues = (currentValue ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                                <select id="@fieldId" name="submittedValues[@parameter.Name]" class="reports-input" multiple size="5" aria-label="@parameter.DisplayName">
-                                    @foreach (var option in options)
-                                    {
-                                        <option value="@option.Value" selected="@selectedValues.Contains(option.Value, StringComparer.OrdinalIgnoreCase)">@option.Label</option>
-                                    }
-                                </select>
-                                <small class="reports-field-hint">برای انتخاب چند مورد، کلید Ctrl را نگه دارید.</small>
+                                <div class="reports-searchable-listbox" data-searchable-listbox>
+                                    <input type="search" class="reports-input reports-listbox-search" data-listbox-search
+                                           placeholder="جست‌وجو در گزینه‌ها..." aria-label="جست‌وجو در @parameter.DisplayName"
+                                           autocomplete="off" />
+                                    <select id="@fieldId" name="submittedValues[@parameter.Name]" class="reports-input reports-listbox-select"
+                                            multiple size="6" aria-label="@parameter.DisplayName" data-listbox-options>
+                                        @foreach (var option in options)
+                                        {
+                                            <option value="@option.Value" selected="@selectedValues.Contains(option.Value, StringComparer.OrdinalIgnoreCase)">@option.Label</option>
+                                        }
+                                    </select>
+                                    <small class="reports-field-hint" data-listbox-status>
+                                        @if (options.Count > 100)
+                                        {
+                                            <text>۱۰۰ گزینه اول نمایش داده می‌شود؛ برای یافتن سایر گزینه‌ها جست‌وجو کنید.</text>
+                                        }
+                                        else
+                                        {
+                                            <text>@options.Count گزینه موجود است.</text>
+                                        }
+                                        انتخاب چند مورد با Ctrl یا کلیک امکان‌پذیر است.
+                                    </small>
+                                </div>
                             }
                             else if (parameter.Type == "ComboBox")
                             {
