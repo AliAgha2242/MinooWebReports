@@ -155,20 +155,6 @@
                                     </small>
                                 </div>
                             }
-                                    </select>
-                                    <small class="reports-field-hint" data-listbox-status>
-                                        @if (options.Count > 100)
-                                        {
-                                            <text>۱۰۰ گزینه اول نمایش داده می‌شود؛ برای یافتن سایر گزینه‌ها جست‌وجو کنید.</text>
-                                        }
-                                        else
-                                        {
-                                            <text>@options.Count گزینه موجود است.</text>
-                                        }
-                                        انتخاب چند مورد با Ctrl یا کلیک امکان‌پذیر است.
-                                    </small>
-                                </div>
-                            }
                             else if (parameter.Type == "ComboBox")
                             {
                                 <select id="@fieldId" name="submittedValues[@parameter.Name]" class="reports-input">
