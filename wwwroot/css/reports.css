@@ -250,7 +250,7 @@
 .reports-result-header { gap:16px; padding-bottom:12px; }
 .reports-result-header-title h1 { font-size:19px; }
 .reports-result-workspace { padding:12px; }
-.reports-result-table-wrap { min-height:calc(68vh + 72px); max-height:calc(100vh - 158px); border-radius:8px; }
+.reports-result-table-wrap { min-height:calc(80vh + 100px); max-height:calc(100vh - 90px); border-radius:8px; }
 .reports-result-table-wrap .reports-data-table { min-width:760px; font-size:11px; }
 .reports-result-page .reports-data-table th { padding:10px 9px; }
 .reports-result-page .reports-data-table td { padding:12px 10px; }
@@ -274,7 +274,7 @@
 .reports-result-page .reports-resize-handle { flex:0 0 5px; }
 @media(max-width:650px) {
  .reports-result-page { width:calc(100% - 12px); }
- .reports-result-table-wrap { min-height:65vh; max-height:72vh; }
+ .reports-result-table-wrap { min-height:72vh; max-height:80vh; }
  .reports-result-workspace { padding:8px; }
  .reports-column-picker-list { min-width:0; }
 }
