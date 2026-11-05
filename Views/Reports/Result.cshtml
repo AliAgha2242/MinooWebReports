@@ -103,6 +103,33 @@
             <button type="submit" class="reports-run-button">اعمال فیلتر و گروه‌بندی <span>↻</span></button>
         </div>
 
+        @if (Model.GroupColumns.Count > 0)
+        {
+            <section class="reports-active-grouping" aria-label="گروه‌بندی فعال">
+                <div class="reports-active-grouping-heading">
+                    <span class="reports-active-grouping-icon">▦</span>
+                    <div>
+                        <strong>گروه‌بندی فعال است</strong>
+                        <small>ترتیب نمایش گروه‌ها از سطح اصلی به زیرگروه</small>
+                    </div>
+                    <span class="reports-active-grouping-count">@Model.GroupColumns.Count سطح</span>
+                </div>
+                <div class="reports-active-grouping-levels">
+                    @for (var groupIndex = 0; groupIndex < Model.GroupColumns.Count; groupIndex++)
+                    {
+                        <span class="reports-active-grouping-level reports-active-grouping-level-@groupIndex">
+                            <small>سطح @(groupIndex + 1)</small>
+                            <bdi>@Model.GroupColumns[groupIndex]</bdi>
+                        </span>
+                        @if (groupIndex < Model.GroupColumns.Count - 1)
+                        {
+                            <span class="reports-active-grouping-arrow" aria-hidden="true">←</span>
+                        }
+                    }
+                </div>
+            </section>
+        }
+
         <div class="reports-table-wrap reports-result-table-wrap">
             <table class="reports-data-table" data-report-table>
                 <thead>
@@ -160,8 +187,12 @@
                                         <td class="reports-group-indent-cell" aria-hidden="true"></td>
                                     }
                                     <td colspan="@Math.Max(1, visibleColumns.Count - indentCount)">
-                                        <span class="reports-group-level">گروه @((level + 1).ToString()) · @groupColumn</span>
-                                        <strong>@DisplayCell(row, groupColumn)</strong>
+                                        <div class="reports-group-row-content">
+                                            <span class="reports-group-level-badge">سطح @(level + 1)</span>
+                                            <span class="reports-group-column">@groupColumn</span>
+                                            <span class="reports-group-equals">=</span>
+                                            <strong class="reports-group-value">@DisplayCell(row, groupColumn)</strong>
+                                        </div>
                                     </td>
                                 </tr>
                                 previousGroupValues[level] = currentGroupValue;
