@@ -48,7 +48,11 @@ public sealed class SqlReportExecutionService(
     {
         var sourceSql = parameter.DataSource;
         if (string.IsNullOrWhiteSpace(sourceSql))
+        {
+            if (parameter.Type == "ListBox")
+                ValidateListBoxOptionValues(parameter.Options, parameter.DisplayName);
             return parameter.Options;
+        }
 
         sourceSql = sourceSql.Trim();
         ValidateReadOnlySelect(sourceSql);
@@ -158,45 +162,41 @@ public sealed class SqlReportExecutionService(
         await using var reader = await command.ExecuteReaderAsync(
             CommandBehavior.SequentialAccess, cancellationToken);
 
+        var columnNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         for (var i = 0; i < reader.FieldCount; i++)
-            table.Columns.Add(reader.GetName(i), typeof(string));
-
-
-
-
-        try
         {
-            while (await reader.ReadAsync(cancellationToken))
+            var baseName = string.IsNullOrWhiteSpace(reader.GetName(i)) ? $"Column{i + 1}" : reader.GetName(i);
+            var uniqueName = baseName;
+            var suffix = 2;
+            while (!columnNames.Add(uniqueName))
+                uniqueName = $"{baseName}_{suffix++}";
+            table.Columns.Add(uniqueName, typeof(string));
+        }
+
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            if (table.Rows.Count >= maxRows)
+                throw new InvalidOperationException(
+                    $"تعداد رکوردهای خروجی از سقف مجاز ({maxRows:N0}) بیشتر است. لطفاً پارامترهای گزارش را محدودتر کنید.");
+
+            var row = table.NewRow();
+            for (var i = 0; i < reader.FieldCount; i++)
             {
-                if (table.Rows.Count >= maxRows)
-                    throw new InvalidOperationException(
-                        $"تعداد رکوردهای خروجی از سقف مجاز ({maxRows:N0}) بیشتر است. لطفاً پارامترهای گزارش را محدودتر کنید.");
-
-                var row = table.NewRow();
-                for (var i = 0; i < reader.FieldCount; i++)
+                if (await reader.IsDBNullAsync(i, cancellationToken))
                 {
-                    if (await reader.IsDBNullAsync(i, cancellationToken))
-                    {
-                        row[i] = DBNull.Value;
-                        continue;
-                    }
-
-                    var value = reader.GetValue(i);
-                    row[i] = value is byte[] bytes
-                        ? Convert.ToBase64String(bytes)
-                        : Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture)
-                            ?? string.Empty;
+                    row[i] = DBNull.Value;
+                    continue;
                 }
 
-                table.Rows.Add(row);
+                var value = reader.GetValue(i);
+                row[i] = value is byte[] bytes
+                    ? Convert.ToBase64String(bytes)
+                    : Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture)
+                        ?? string.Empty;
             }
-        }
-        catch (Exception ex)
-        {
 
-            throw;
+            table.Rows.Add(row);
         }
-        
 
         return table;
     }
@@ -331,8 +331,33 @@ public sealed class SqlReportExecutionService(
                     ? value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                     : new[] { value };
 
+                if (parameter.Type == "ListBox" &&
+                    submitted.Any(item => !decimal.TryParse(item,
+                        System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out _)))
+                {
+                    throw new ArgumentException(
+                        $"مقادیر انتخاب‌شده برای «{parameter.DisplayName}» باید عدد صحیح یا اعشاری باشند.");
+                }
+
                 if (submitted.Length == 0 || submitted.Any(item => !allowed.Contains(item)))
                     throw new ArgumentException($"یکی از گزینه‌های انتخاب‌شده برای «{parameter.DisplayName}» معتبر نیست.");
+            }
+        }
+    }
+
+    private static void ValidateListBoxOptionValues(string? json, string displayName)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return;
+
+        foreach (var value in ReadAllowedOptions(json))
+        {
+            if (!decimal.TryParse(value, System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out _))
+            {
+                throw new InvalidOperationException(
+                    $"مقدار گزینه «{value}» برای پارامتر «{displayName}» باید عدد صحیح یا اعشاری باشد.");
             }
         }
     }
