@@ -66,7 +66,7 @@ public sealed class ReportsController(
         {
             Report = report,
             SelectedConnection = connection,
-            PageSize = Math.Clamp(preferences.PageSize, 10, 200),
+            PageSize = report.NeedsPagination ? Math.Clamp(report.PageSize > 0 ? report.PageSize : 25, 10, 5000) : Math.Max(1, report.PageSize),
             Error = optionsError
         });
     }
@@ -115,7 +115,6 @@ public sealed class ReportsController(
         string? columnWidthsJson = null,
         string? gridTheme = null,
         int page = 1,
-        int? pageSize = null,
         CancellationToken cancellationToken = default)
     {
         var report = await reports.GetByIdAsync(id, cancellationToken);
@@ -226,8 +225,9 @@ public sealed class ReportsController(
 
             var preferences = savedPreferences;
             var totalRows = filtered.Rows.Count;
+            // Pagination is controlled by ReportDefinitions, not per-user grid preferences.
             var actualPageSize = report.NeedsPagination
-                ? Math.Clamp(pageSize ?? preferences.PageSize, 10, 200)
+                ? Math.Clamp(report.PageSize > 0 ? report.PageSize : 25, 10, 5000)
                 : Math.Max(1, totalRows);
             var totalPages = Math.Max(1, (int)Math.Ceiling(totalRows / (double)actualPageSize));
             page = Math.Clamp(page, 1, totalPages);
@@ -300,7 +300,7 @@ public sealed class ReportsController(
                 Report = report,
                 SelectedConnection = connection,
                 Values = values,
-                PageSize = Math.Clamp(pageSize ?? report.PageSize, 10, 200),
+                PageSize = report.NeedsPagination ? Math.Clamp(report.PageSize > 0 ? report.PageSize : 25, 10, 5000) : Math.Max(1, report.PageSize),
                 Error = userMessage
             });
         }
