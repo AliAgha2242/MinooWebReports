@@ -123,12 +123,38 @@
                                     <input type="search" class="reports-input reports-listbox-search" data-listbox-search
                                            placeholder="جست‌وجو در گزینه‌ها..." aria-label="جست‌وجو در @parameter.DisplayName"
                                            autocomplete="off" />
-                                    <select id="@fieldId" name="submittedValues[@parameter.Name]" class="reports-input reports-listbox-select"
-                                            multiple size="6" aria-label="@parameter.DisplayName" data-listbox-options>
+                                    <div class="reports-listbox-options" data-listbox-options
+                                         role="group" aria-label="@parameter.DisplayName"
+                                         data-field-name="submittedValues[@parameter.Name]">
                                         @foreach (var option in options)
                                         {
-                                            <option value="@option.Value" selected="@selectedValues.Contains(option.Value, StringComparer.OrdinalIgnoreCase)">@option.Label</option>
+                                            var isSelected = selectedValues.Contains(option.Value, StringComparer.OrdinalIgnoreCase);
+                                            <label class="reports-listbox-option" data-listbox-option
+                                                   data-search-text="@($"{option.Label} {option.Value}")">
+                                                <input type="checkbox" value="@option.Value" checked="@isSelected" data-listbox-checkbox />
+                                                <span class="reports-listbox-option-label">@option.Label</span>
+                                                <small class="reports-listbox-option-value" dir="ltr">@option.Value</small>
+                                            </label>
                                         }
+                                    </div>
+                                    <div data-listbox-hidden-inputs>
+                                        @foreach (var selectedValue in selectedValues)
+                                        {
+                                            <input type="hidden" name="submittedValues[@parameter.Name]" value="@selectedValue" />
+                                        }
+                                    </div>
+                                    <small class="reports-field-hint" data-listbox-status>
+                                        @if (options.Count > 100)
+                                        {
+                                            <text>۱۰۰ گزینه اول نمایش داده می‌شود؛ برای یافتن سایر گزینه‌ها جست‌وجو کنید.</text>
+                                        }
+                                        else
+                                        {
+                                            <text>@options.Count گزینه موجود است.</text>
+                                        }
+                                    </small>
+                                </div>
+                            }
                                     </select>
                                     <small class="reports-field-hint" data-listbox-status>
                                         @if (options.Count > 100)
