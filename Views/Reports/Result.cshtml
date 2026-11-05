@@ -153,8 +153,13 @@
                                     hasPreviousGroupValues[deeperLevel] = false;
                                     previousGroupValues[deeperLevel] = null;
                                 }
-                                <tr class="reports-group-row">
-                                    <td colspan="@Math.Max(1, visibleColumns.Count)">
+                                var indentCount = Math.Min(level, Math.Max(0, visibleColumns.Count - 1));
+                                <tr class="reports-group-row reports-group-row-level-@level">
+                                    @for (var indent = 0; indent < indentCount; indent++)
+                                    {
+                                        <td class="reports-group-indent-cell" aria-hidden="true"></td>
+                                    }
+                                    <td colspan="@Math.Max(1, visibleColumns.Count - indentCount)">
                                         <span class="reports-group-level">گروه @((level + 1).ToString()) · @groupColumn</span>
                                         <strong>@DisplayCell(row, groupColumn)</strong>
                                     </td>
