@@ -487,3 +487,7 @@
 }
 .reports-listbox-dropdown[hidden] { display:none !important; }
 .reports-listbox-dropdown .reports-listbox-options { height:220px; min-height:220px; max-height:220px; }
+
+/* Let searchable listbox parameters use the full parameter-grid width. */
+.reports-parameter-field:has(.reports-searchable-listbox) { grid-column:1 / -1; }
+.reports-parameter-field .reports-searchable-listbox { width:100%; }
