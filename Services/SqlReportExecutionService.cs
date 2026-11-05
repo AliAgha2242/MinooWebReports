@@ -96,6 +96,14 @@ public sealed class SqlReportExecutionService(
             var value = await reader.IsDBNullAsync(valueOrdinal, cancellationToken)
                 ? string.Empty
                 : Convert.ToString(reader.GetValue(valueOrdinal), System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
+
+            if (!decimal.TryParse(value, System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out _))
+            {
+                throw new InvalidOperationException(
+                    $"مقدار گزینه «{value}» برای پارامتر «{parameter.DisplayName}» باید عدد صحیح یا اعشاری باشد.");
+            }
+
             var label = await reader.IsDBNullAsync(displayOrdinal, cancellationToken)
                 ? value
                 : Convert.ToString(reader.GetValue(displayOrdinal), System.Globalization.CultureInfo.CurrentCulture) ?? value;
