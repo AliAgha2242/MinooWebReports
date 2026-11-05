@@ -62,11 +62,12 @@
             </div>
         </div>
 
-        <section class="reports-grouping-panel" aria-label="گروه‌بندی ستون‌ها">
-            <div class="reports-grouping-heading">
-                <div><strong>گروه‌بندی با کشیدن و رها کردن</strong><small>ستون موردنظر را بکشید و در ناحیه زیر رها کنید؛ ترتیب گروه‌ها قابل تغییر است.</small></div>
-                <span>حداکثر ۳ سطح</span>
-            </div>
+        <details class="reports-grouping-panel" aria-label="گروه‌بندی ستون‌ها">
+            <summary class="reports-grouping-summary">
+                <span class="reports-grouping-summary-title"><strong>گروه‌بندی</strong><small>برای انتخاب و مرتب‌سازی ستون‌های گروه‌بندی باز کنید</small></span>
+                <span class="reports-grouping-summary-meta">حداکثر ۳ سطح <span class="reports-collapse-icon">⌄</span></span>
+            </summary>
+            <div class="reports-grouping-content">
             <div class="reports-group-dropzone" data-group-dropzone>
                 <span class="reports-group-placeholder" data-group-placeholder>ستون‌ها را از فهرست زیر به این قسمت بکشید</span>
                 @foreach (var column in Model.GroupColumns)
@@ -84,7 +85,8 @@
                     <button type="button" class="reports-group-source" draggable="true" data-group-source data-column="@column">@column <span>⠿</span></button>
                 }
             </div>
-        </section>
+            </div>
+        </details>
 
         <div class="reports-grid-controls">
             <label>مرتب‌سازی بر اساس
@@ -194,8 +196,12 @@
         }
     </form>
 
-    <section class="reports-result-details">
-        <div class="reports-result-details-heading"><span class="report-step">REPORT DETAILS</span><h3>جزئیات گزارش و پارامترهای اجرا</h3></div>
+    <details class="reports-result-details">
+        <summary class="reports-result-details-summary">
+            <span><strong>جزئیات گزارش و پارامترهای اجرا</strong><small>اطلاعات سرور، دیتابیس و مقادیر پارامترهای این اجرا</small></span>
+            <span class="reports-collapse-icon">⌄</span>
+        </summary>
+        <div class="reports-result-details-content">
         <div class="reports-result-context">
             <div class="reports-result-context-title"><span class="reports-connection-status-dot"></span><strong>محل اجرای گزارش</strong></div>
             <div><small>واحد تجاری</small><strong>@Model.SelectedConnection.VahedetejariDs</strong></div>
@@ -219,7 +225,8 @@
                 }
             }
         </div>
-    </section>
+        </div>
+    </details>
 
     <footer class="reports-result-footer"><span>© @DateTime.Now.Year گروه صنعتی مینو</span><span>MINOO WEB REPORTS</span></footer>
 </main>
