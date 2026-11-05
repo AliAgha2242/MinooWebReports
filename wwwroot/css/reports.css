@@ -250,7 +250,7 @@
 .reports-result-header { gap:16px; padding-bottom:12px; }
 .reports-result-header-title h1 { font-size:19px; }
 .reports-result-workspace { padding:12px; }
-.reports-result-table-wrap { min-height:68vh; max-height:calc(100vh - 230px); border-radius:8px; }
+.reports-result-table-wrap { min-height:calc(68vh + 72px); max-height:calc(100vh - 158px); border-radius:8px; }
 .reports-result-table-wrap .reports-data-table { min-width:760px; font-size:11px; }
 .reports-result-page .reports-data-table th { padding:10px 9px; }
 .reports-result-page .reports-data-table td { padding:12px 10px; }
@@ -491,3 +491,6 @@
 /* Let searchable listbox parameters use the full parameter-grid width. */
 .reports-parameter-field:has(.reports-searchable-listbox) { grid-column:1 / -1; }
 .reports-parameter-field .reports-searchable-listbox { width:100%; }
+/* Compact the report toolbar after moving the theme selector into grid controls. */
+.reports-result-page .reports-grid-toolbar { min-height:0; }
+.reports-result-page .reports-grid-controls .reports-theme-picker { min-width:145px; }
