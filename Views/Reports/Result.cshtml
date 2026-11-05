@@ -88,20 +88,11 @@
             </div>
         </details>
 
+        <input type="hidden" name="sortColumn" value="@Model.SortColumn" data-sort-column-input />
+        <input type="hidden" name="sortDescending" value="@Model.SortDescending.ToString().ToLowerInvariant()" data-sort-direction-input />
         <div class="reports-grid-controls">
-            <label>مرتب‌سازی بر اساس
-                <select name="sortColumn" class="reports-input">
-                    <option value="">بدون مرتب‌سازی</option>
-                    @foreach (var column in Model.AllColumns)
-                    {
-                        <option value="@column" selected="@(Model.SortColumn == column)">@column</option>
-                    }
-                </select>
-            </label>
-            <label class="reports-checkbox"><input type="checkbox" name="sortDescending" value="true" checked="@Model.SortDescending" /> نزولی</label>
-            <input type="hidden" name="sortDescending" value="false" />
             <details class="reports-column-picker">
-                <summary>نمایش و پنهان‌سازی ستون‌ها <span>@Model.AllColumns.Count ستون</span></summary>
+                <summary><span class="reports-column-picker-title">ستون‌ها</span><span class="reports-column-picker-count">@Model.HiddenColumns.Count پنهان</span></summary>
                 <div class="reports-column-picker-list">
                     @foreach (var column in Model.AllColumns)
                     {
@@ -109,7 +100,7 @@
                     }
                 </div>
             </details>
-            <button type="submit" class="reports-run-button">اعمال تنظیمات <span>↻</span></button>
+            <button type="submit" class="reports-run-button">اعمال فیلتر و گروه‌بندی <span>↻</span></button>
         </div>
 
         <div class="reports-table-wrap reports-result-table-wrap">
@@ -120,7 +111,14 @@
                         {
                             var width = Model.ColumnWidths.TryGetValue(column, out var savedWidth) ? savedWidth : 160;
                             <th data-column-header="@column" style="width:@(width)px;min-width:90px">
-                                <div class="reports-th-title"><span>@column</span><span class="reports-resize-handle" data-column-resizer aria-hidden="true"></span></div>
+                                <div class="reports-th-title">
+                                    <span class="reports-th-label">@column</span>
+                                    <span class="reports-sort-arrows" role="group" aria-label="مرتب‌سازی @column">
+                                        <button type="button" class="reports-sort-arrow @(Model.SortColumn == column && !Model.SortDescending ? "is-active" : "")" data-sort-column="@column" data-sort-direction="asc" aria-label="مرتب‌سازی صعودی @column" aria-pressed="@(Model.SortColumn == column && !Model.SortDescending ? "true" : "false")">↑</button>
+                                        <button type="button" class="reports-sort-arrow @(Model.SortColumn == column && Model.SortDescending ? "is-active" : "")" data-sort-column="@column" data-sort-direction="desc" aria-label="مرتب‌سازی نزولی @column" aria-pressed="@(Model.SortColumn == column && Model.SortDescending ? "true" : "false")">↓</button>
+                                    </span>
+                                    <span class="reports-resize-handle" data-column-resizer aria-hidden="true"></span>
+                                </div>
                             </th>
                         }
                     </tr>
