@@ -32,15 +32,6 @@
             <input type="hidden" name="submittedValues[@item.Key]" value="@item.Value" />
         }
 
-        <div class="reports-grid-toolbar">
-            <div>
-                <span class="report-step">REPORT OUTPUT</span>
-                <h2> @Model.Report.Name </h2>
-                <p>@Model.TotalRows.ToString("N0") رکورد · صفحه @Model.Page از @Model.TotalPages</p>
-            </div>
-
-        </div>
-
         <details class="reports-grouping-panel" aria-label="گروه‌بندی ستون‌ها">
             <summary class="reports-grouping-summary">
                 <span class="reports-grouping-summary-title"><strong>گروه‌بندی</strong><small>برای انتخاب و مرتب‌سازی ستون‌های گروه‌بندی باز کنید</small></span>
