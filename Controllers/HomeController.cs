@@ -81,7 +81,7 @@ public sealed class HomeController(
             ViewBag.Connections = Array.Empty<VahedTejari>();
             ViewBag.ConfigurationError = "اطلاعات هویتی کاربر برای بررسی دسترسی‌ها معتبر نیست. لطفاً دوباره از درگاه مادر وارد شوید.";
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.LogError(ex, "Authorized business-unit locations could not be loaded.");
             ViewBag.Connections = Array.Empty<VahedTejari>();
