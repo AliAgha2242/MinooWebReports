@@ -187,14 +187,25 @@ public sealed class ReportsController(
                 .Take(200)
                 .ToDictionary(pair => pair.Key, pair => Math.Clamp(pair.Value, 90, 800), StringComparer.OrdinalIgnoreCase);
 
-            var filteredRows = raw.AsEnumerable().Where(row => filters.All(filter =>
-                string.IsNullOrWhiteSpace(filter.Value) ||
-                Convert.ToString(row[filter.Key], System.Globalization.CultureInfo.CurrentCulture)?
-                    .Contains(filter.Value, StringComparison.CurrentCultureIgnoreCase) == true));
-
-            var filtered = raw.Clone();
-            foreach (var row in filteredRows)
-                filtered.ImportRow(row);
+            // Filter and sort through DataView indexes instead of cloning the full DataTable
+            // multiple times. This keeps only the requested page in a second DataTable.
+            var dataView = new DataView(raw);
+            var filterTerms = filters
+                .Where(filter => !string.IsNullOrWhiteSpace(filter.Value))
+                .Select(filter =>
+                {
+                    var column = filter.Key.Replace("]", "]]", StringComparison.Ordinal);
+                    var value = filter.Value!
+                        .Replace("'", "''", StringComparison.Ordinal)
+                        .Replace("[", "[[]", StringComparison.Ordinal)
+                        .Replace("]", "[]]", StringComparison.Ordinal)
+                        .Replace("*", "[*]", StringComparison.Ordinal)
+                        .Replace("%", "[%]", StringComparison.Ordinal);
+                    return $"[{column}] LIKE '%{value}%'";
+                })
+                .ToArray();
+            if (filterTerms.Length > 0)
+                dataView.RowFilter = string.Join(" AND ", filterTerms);
 
             // Grouping is a presentation operation: sort by group keys first, then by the user's sort.
             // All column names are checked against the actual result schema before entering DataView.Sort.
@@ -218,13 +229,10 @@ public sealed class ReportsController(
             }
 
             if (sortTerms.Count > 0)
-            {
-                var view = new DataView(filtered) { Sort = string.Join(", ", sortTerms) };
-                filtered = view.ToTable();
-            }
+                dataView.Sort = string.Join(", ", sortTerms);
 
             var preferences = savedPreferences;
-            var totalRows = filtered.Rows.Count;
+            var totalRows = dataView.Count;
             // Pagination is controlled by ReportDefinitions, not per-user grid preferences.
             var actualPageSize = report.NeedsPagination
                 ? Math.Clamp(report.PageSize > 0 ? report.PageSize : 25, 1, 5000)
@@ -232,11 +240,11 @@ public sealed class ReportsController(
             var totalPages = Math.Max(1, (int)Math.Ceiling(totalRows / (double)actualPageSize));
             page = Math.Clamp(page, 1, totalPages);
 
-            var paged = filtered.Clone();
-            foreach (var row in filtered.AsEnumerable()
-                         .Skip((page - 1) * actualPageSize)
-                         .Take(actualPageSize))
-                paged.ImportRow(row);
+            var paged = raw.Clone();
+            var firstRowIndex = (page - 1) * actualPageSize;
+            var lastRowIndex = Math.Min(firstRowIndex + actualPageSize, totalRows);
+            for (var rowIndex = firstRowIndex; rowIndex < lastRowIndex; rowIndex++)
+                paged.ImportRow(dataView[rowIndex].Row);
 
             var hidden = (hiddenColumnsSubmitted ? hiddenColumns ?? [] : preferences.HiddenColumns)
                 .Where(column => validColumns.Contains(column, StringComparer.OrdinalIgnoreCase))
