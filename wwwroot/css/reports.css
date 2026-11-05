@@ -467,3 +467,23 @@
 .reports-listbox-option-value { color:var(--grid-muted,#86a4b8); font-size:9px; white-space:nowrap; }
 .reports-listbox-option[hidden] { display:none !important; }
 .reports-searchable-listbox .reports-field-hint { line-height:1.9; }
+
+
+/* Compact dropdown behavior for searchable multi-select parameters. */
+.reports-searchable-listbox { position:relative; }
+.reports-listbox-trigger {
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    width:100%; min-height:38px; text-align:right; cursor:pointer;
+}
+.reports-listbox-trigger > span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.reports-listbox-chevron { flex:0 0 auto; transition:transform .16s ease; }
+.reports-searchable-listbox.is-open .reports-listbox-chevron { transform:rotate(180deg); }
+.reports-listbox-dropdown {
+    position:absolute; z-index:30; top:calc(100% + 5px); right:0; left:0;
+    display:grid; gap:7px; padding:9px;
+    border:1px solid var(--grid-border,rgba(158,196,222,.25));
+    border-radius:9px; background:var(--grid-panel,#10283d);
+    box-shadow:0 14px 34px rgba(0,0,0,.28);
+}
+.reports-listbox-dropdown[hidden] { display:none !important; }
+.reports-listbox-dropdown .reports-listbox-options { height:220px; min-height:220px; max-height:220px; }
