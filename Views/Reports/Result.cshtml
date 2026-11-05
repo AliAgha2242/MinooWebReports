@@ -47,18 +47,7 @@
                         <option value="contrast" selected="@(Model.GridTheme == "contrast")">کنتراست بالا</option>
                     </select>
                 </label>
-                @if (Model.Report.NeedsPagination)
-                {
-                    <label>تعداد در صفحه
-                        <select name="pageSize" class="reports-input reports-page-size">
-                            <option value="10" selected="@(Model.PageSize == 10)">10</option>
-                            <option value="25" selected="@(Model.PageSize == 25)">25</option>
-                            <option value="50" selected="@(Model.PageSize == 50)">50</option>
-                            <option value="100" selected="@(Model.PageSize == 100)">100</option>
-                            <option value="200" selected="@(Model.PageSize == 200)">200</option>
-                        </select>
-                    </label>
-                }
+
             </div>
         </div>
 
