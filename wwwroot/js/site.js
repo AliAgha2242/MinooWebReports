@@ -480,8 +480,8 @@
             });
             const hiddenColumns = Array.from(reportForm.querySelectorAll('input[name="hiddenColumns"]:checked'))
                 .map(input => input.value);
-            const sortInput = reportForm.querySelector('select[name="sortColumn"]');
-            const descendingInput = reportForm.querySelector('input[name="sortDescending"][type="checkbox"]');
+            const sortInput = reportForm.querySelector('[data-sort-column-input]');
+            const descendingInput = reportForm.querySelector('[data-sort-direction-input]');
             const pageSizeInput = reportForm.querySelector('select[name="pageSize"]');
             return {
                 theme: applyTheme(themePicker?.value || reportGrid.dataset.gridTheme),
@@ -490,7 +490,7 @@
                 hiddenColumns,
                 groupColumns: currentGroupValues(),
                 sortColumn: sortInput?.value || "",
-                sortDescending: !!descendingInput?.checked,
+                sortDescending: descendingInput?.value === "true",
                 pageSize: pageSizeInput?.value || "25"
             };
         };
@@ -524,13 +524,24 @@
             });
         }
         if (browserPreferences.sortColumn !== undefined) {
-            const sortInput = reportForm.querySelector('select[name="sortColumn"]');
+            const sortInput = reportForm.querySelector('[data-sort-column-input]');
             if (sortInput) sortInput.value = browserPreferences.sortColumn;
         }
         if (browserPreferences.sortDescending !== undefined) {
-            const descendingInput = reportForm.querySelector('input[name="sortDescending"][type="checkbox"]');
-            if (descendingInput) descendingInput.checked = !!browserPreferences.sortDescending;
+            const descendingInput = reportForm.querySelector('[data-sort-direction-input]');
+            if (descendingInput) descendingInput.value = browserPreferences.sortDescending ? "true" : "false";
         }
+        const updateSortButtons = () => {
+            const selectedColumn = reportForm.querySelector('[data-sort-column-input]')?.value || "";
+            const descending = reportForm.querySelector('[data-sort-direction-input]')?.value === "true";
+            table?.querySelectorAll('[data-sort-direction]').forEach(button => {
+                const active = button.dataset.sortColumn === selectedColumn &&
+                    button.dataset.sortDirection === (descending ? "desc" : "asc");
+                button.classList.toggle("is-active", active);
+                button.setAttribute("aria-pressed", active ? "true" : "false");
+            });
+        };
+        updateSortButtons();
         if (browserPreferences.pageSize) {
             const pageSizeInput = reportForm.querySelector('select[name="pageSize"]');
             if (pageSizeInput) pageSizeInput.value = browserPreferences.pageSize;
@@ -637,8 +648,23 @@
             persistPreferences();
         });
 
+        table?.addEventListener("click", event => {
+            const sortButton = event.target.closest("[data-sort-direction]");
+            if (!sortButton) return;
+            const sortInput = reportForm.querySelector('[data-sort-column-input]');
+            const directionInput = reportForm.querySelector('[data-sort-direction-input]');
+            if (!sortInput || !directionInput) return;
+            sortInput.value = sortButton.dataset.sortColumn || "";
+            directionInput.value = sortButton.dataset.sortDirection === "desc" ? "true" : "false";
+            const pageInput = reportForm.querySelector('input[name="page"]');
+            if (pageInput) pageInput.remove();
+            updateSortButtons();
+            persistPreferences();
+            reportForm.requestSubmit();
+        });
+
         reportForm?.addEventListener("submit", persistPreferences);
-        reportForm?.querySelectorAll('input[name^="filters["], input[name="hiddenColumns"], select[name="sortColumn"], input[name="sortDescending"], select[name="pageSize"]')
+        reportForm?.querySelectorAll('input[name^="filters["], input[name="hiddenColumns"], select[name="pageSize"]')
             .forEach(input => input.addEventListener("change", persistPreferences));
 
         // Ensure the first submission also sends the initial Redis/browser state.
