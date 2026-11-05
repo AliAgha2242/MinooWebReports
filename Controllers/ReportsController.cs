@@ -47,13 +47,27 @@ public sealed class ReportsController(
         }
 
         await selectedConnection.SelectAsync(connection, cancellationToken);
-        await LoadParameterOptionsAsync(report, connection, cancellationToken);
         var preferences = await settings.GetAsync(id, cancellationToken);
+        string? optionsError = null;
+        try
+        {
+            await LoadParameterOptionsAsync(report, connection, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogError(ex, "Parameter options for report {ReportId} could not be loaded.", id);
+            optionsError = "دریافت گزینه‌های پارامترهای گزارش با خطا مواجه شد. تنظیمات منبع گزینه‌ها را بررسی کنید.";
+            foreach (var parameter in report.Parameters.Where(parameter =>
+                         parameter.Type is "RadioButton" or "ListBox" or "ComboBox"))
+                parameter.Options ??= "[]";
+        }
+
         return View(new ReportRunViewModel
         {
             Report = report,
             SelectedConnection = connection,
-            PageSize = Math.Clamp(preferences.PageSize, 10, 200)
+            PageSize = Math.Clamp(preferences.PageSize, 10, 200),
+            Error = optionsError
         });
     }
 
@@ -189,18 +203,19 @@ public sealed class ReportsController(
             foreach (var groupColumn in groupColumns)
             {
                 var safeGroupColumn = groupColumn.Replace("]", "]]", StringComparison.Ordinal);
-                sortTerms.Add($"[{safeGroupColumn}] ASC");
+                var isActiveSortColumn = string.Equals(groupColumn, sortColumn, StringComparison.OrdinalIgnoreCase);
+                var groupDirection = isActiveSortColumn && sortDescending ? "DESC" : "ASC";
+                sortTerms.Add($"[{safeGroupColumn}] {groupDirection}");
             }
 
             if (!string.IsNullOrWhiteSpace(sortColumn) &&
-                validColumns.Contains(sortColumn, StringComparer.OrdinalIgnoreCase))
+                validColumns.Contains(sortColumn, StringComparer.OrdinalIgnoreCase) &&
+                !groupColumns.Any(column =>
+                    string.Equals(column, sortColumn, StringComparison.OrdinalIgnoreCase)))
             {
                 var safeColumn = sortColumn.Replace("]", "]]", StringComparison.Ordinal);
                 var direction = sortDescending ? "DESC" : "ASC";
-                var existingSort = groupColumns.Any(column =>
-                    string.Equals(column, sortColumn, StringComparison.OrdinalIgnoreCase));
-                if (!existingSort)
-                    sortTerms.Add($"[{safeColumn}] {direction}");
+                sortTerms.Add($"[{safeColumn}] {direction}");
             }
 
             if (sortTerms.Count > 0)
