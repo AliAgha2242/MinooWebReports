@@ -278,3 +278,25 @@
  .reports-result-workspace { padding:8px; }
  .reports-column-picker-list { min-width:0; }
 }
+
+
+/* Hierarchical grouping rows: each nested level advances one table column. */
+.reports-result-page .reports-data-table .reports-group-row .reports-group-indent-cell {
+    padding: 0;
+    background: rgba(4,18,31,.22);
+    border-top: 1px solid var(--grid-border,rgba(158,196,222,.16));
+    border-bottom: 1px solid var(--grid-border,rgba(158,196,222,.16));
+    border-left: 1px dashed var(--grid-border,rgba(158,196,222,.2));
+}
+.reports-result-page .reports-data-table .reports-group-row td:last-child {
+    padding: 10px 13px;
+}
+.reports-result-page .reports-data-table .reports-group-row-level-1 td:last-child {
+    background: rgba(36,132,154,.08);
+}
+.reports-result-page .reports-data-table .reports-group-row-level-2 td:last-child {
+    background: rgba(36,132,154,.14);
+}
+.reports-result-page .reports-data-table .reports-group-row-level-2 .reports-group-level {
+    color: var(--grid-accent,#82dce1);
+}
