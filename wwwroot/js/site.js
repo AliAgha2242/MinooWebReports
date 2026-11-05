@@ -14,43 +14,58 @@
 
     // Searchable multi-select listboxes: show the first 100 options initially,
     // then search across the complete option collection without clearing selections.
+    // Fixed-height searchable checkbox listboxes with hidden form values.
     document.querySelectorAll("[data-searchable-listbox]").forEach(container => {
         const search = container.querySelector("[data-listbox-search]");
-        const select = container.querySelector("[data-listbox-options]");
+        const list = container.querySelector("[data-listbox-options]");
         const status = container.querySelector("[data-listbox-status]");
-        if (!search || !select) return;
+        const hiddenInputs = container.querySelector("[data-listbox-hidden-inputs]");
+        if (!search || !list || !hiddenInputs) return;
 
-        const options = Array.from(select.options);
+        const items = Array.from(list.querySelectorAll("[data-listbox-option]"));
         const initialLimit = 100;
         const normalize = value => String(value ?? "").trim().toLocaleLowerCase();
 
+        const syncSelectedValues = () => {
+            hiddenInputs.replaceChildren();
+            items.filter(item => item.querySelector("[data-listbox-checkbox]")?.checked)
+                .forEach(item => {
+                    const checkbox = item.querySelector("[data-listbox-checkbox]");
+                    const input = document.createElement("input");
+                    input.type = "hidden";
+                    input.name = list.dataset.fieldName;
+                    input.value = checkbox.value;
+                    hiddenInputs.appendChild(input);
+                });
+        };
+
         const renderOptions = () => {
             const query = normalize(search.value);
-            const matches = options.filter(option =>
-                !query || normalize(option.textContent).includes(query) || normalize(option.value).includes(query));
-            const visible = query ? matches.slice(0, initialLimit) : options.slice(0, initialLimit);
-            const visibleSet = new Set(visible);
-
-            // Keep selected options available even when they are outside the current result window.
-            options.forEach(option => {
-                option.hidden = !visibleSet.has(option) && !option.selected;
+            const matches = items.filter(item => normalize(item.dataset.searchText).includes(query));
+            const visibleItems = query ? matches.slice(0, initialLimit) : items.slice(0, initialLimit);
+            const visibleSet = new Set(visibleItems);
+            items.forEach(item => {
+                const checkbox = item.querySelector("[data-listbox-checkbox]");
+                item.hidden = !visibleSet.has(item) && !checkbox.checked;
             });
 
-            const shownCount = visible.length + options.filter(option => option.selected && !visibleSet.has(option)).length;
             if (status) {
-                if (query) {
-                    status.textContent = matches.length > initialLimit
-                        ? `${shownCount} مورد نمایش داده شده از ${matches.length} نتیجه؛ برای دقیق‌تر شدن جست‌وجو بنویسید.`
-                        : `${shownCount} نتیجه از ${matches.length} گزینه.`;
-                } else {
-                    status.textContent = options.length > initialLimit
-                        ? `۱۰۰ گزینه اول از ${options.length} گزینه نمایش داده می‌شود؛ برای یافتن سایر گزینه‌ها جست‌وجو کنید.`
-                        : `${options.length} گزینه موجود است.`;
-                }
+                const selectedCount = items.filter(item => item.querySelector("[data-listbox-checkbox]")?.checked).length;
+                const shownCount = visibleItems.length + items.filter(item =>
+                    item.querySelector("[data-listbox-checkbox]")?.checked && !visibleSet.has(item)).length;
+                status.textContent = query
+                    ? `${shownCount} مورد از ${matches.length} نتیجه نمایش داده شده · ${selectedCount} انتخاب‌شده`
+                    : `${items.length > initialLimit ? "۱۰۰ گزینه اول از " + items.length : items.length} گزینه · ${selectedCount} انتخاب‌شده`;
             }
         };
 
+        list.addEventListener("change", event => {
+            if (!event.target.matches("[data-listbox-checkbox]")) return;
+            syncSelectedValues();
+            renderOptions();
+        });
         search.addEventListener("input", renderOptions);
+        syncSelectedValues();
         renderOptions();
     });
 
