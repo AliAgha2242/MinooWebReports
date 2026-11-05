@@ -425,3 +425,12 @@
     .reports-active-grouping-levels { gap: 5px; }
     .reports-active-grouping-level { padding: 4px 7px; }
 }
+
+
+/* Searchable multi-select parameter listboxes. */
+.reports-searchable-listbox { display:grid; gap:7px; min-width:0; }
+.reports-listbox-search { min-height:35px; }
+.reports-listbox-select { min-height:150px; padding:5px; }
+.reports-listbox-select option { padding:5px 8px; border-radius:4px; }
+.reports-listbox-select option:checked { color:#fff; background:#167e9b linear-gradient(0deg,#167e9b,#167e9b); }
+.reports-searchable-listbox .reports-field-hint { line-height:1.9; }
