@@ -19,10 +19,12 @@ public sealed class SqlConnectionStringFactory : IConnectionStringFactory
         {
             DataSource = connection.Server.Trim(),
             InitialCatalog = connection.DataBAset.Trim(),
-            IntegratedSecurity = true,
+            IntegratedSecurity = false,
             TrustServerCertificate = true,
             ConnectTimeout = 15,
-            ApplicationName = "MinooWebReports"
+            ApplicationName = "MinooWebReports",
+            UserID="tavakoli",
+            Password="11"
         };
 
         return builder.ConnectionString;

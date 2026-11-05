@@ -156,30 +156,42 @@ public sealed class SqlReportExecutionService(
         for (var i = 0; i < reader.FieldCount; i++)
             table.Columns.Add(reader.GetName(i), typeof(string));
 
-        while (await reader.ReadAsync(cancellationToken))
-        {
-            if (table.Rows.Count >= maxRows)
-                throw new InvalidOperationException(
-                    $"تعداد رکوردهای خروجی از سقف مجاز ({maxRows:N0}) بیشتر است. لطفاً پارامترهای گزارش را محدودتر کنید.");
 
-            var row = table.NewRow();
-            for (var i = 0; i < reader.FieldCount; i++)
+
+
+        try
+        {
+            while (await reader.ReadAsync(cancellationToken))
             {
-                if (await reader.IsDBNullAsync(i, cancellationToken))
+                if (table.Rows.Count >= maxRows)
+                    throw new InvalidOperationException(
+                        $"تعداد رکوردهای خروجی از سقف مجاز ({maxRows:N0}) بیشتر است. لطفاً پارامترهای گزارش را محدودتر کنید.");
+
+                var row = table.NewRow();
+                for (var i = 0; i < reader.FieldCount; i++)
                 {
-                    row[i] = DBNull.Value;
-                    continue;
+                    if (await reader.IsDBNullAsync(i, cancellationToken))
+                    {
+                        row[i] = DBNull.Value;
+                        continue;
+                    }
+
+                    var value = reader.GetValue(i);
+                    row[i] = value is byte[] bytes
+                        ? Convert.ToBase64String(bytes)
+                        : Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture)
+                            ?? string.Empty;
                 }
 
-                var value = reader.GetValue(i);
-                row[i] = value is byte[] bytes
-                    ? Convert.ToBase64String(bytes)
-                    : Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture)
-                        ?? string.Empty;
+                table.Rows.Add(row);
             }
-
-            table.Rows.Add(row);
         }
+        catch (Exception ex)
+        {
+
+            throw;
+        }
+        
 
         return table;
     }
