@@ -93,9 +93,6 @@ public sealed class SqlReportExecutionService(
         var options = new List<object>();
         while (await reader.ReadAsync(cancellationToken))
         {
-            if (options.Count >= 2000)
-                throw new InvalidOperationException("تعداد گزینه‌های پارامتر از سقف مجاز ۲۰۰۰ مورد بیشتر است.");
-
             var value = await reader.IsDBNullAsync(valueOrdinal, cancellationToken)
                 ? string.Empty
                 : Convert.ToString(reader.GetValue(valueOrdinal), System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
