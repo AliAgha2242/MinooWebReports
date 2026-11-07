@@ -66,13 +66,41 @@ public sealed class ReportsController(
                 parameter.Options ??= "[]";
         }
 
+        var initialValues = report.Parameters
+            .Where(parameter => !string.IsNullOrWhiteSpace(parameter.DefaultValue))
+            .ToDictionary(parameter => parameter.Name, parameter => GetDisplayDefault(parameter), StringComparer.OrdinalIgnoreCase);
+
         return View(new ReportRunViewModel
         {
             Report = report,
+            Values = initialValues,
             SelectedConnection = connection,
             PageSize = report.NeedsPagination ? Math.Clamp(report.PageSize > 0 ? report.PageSize : 25, 1, 5000) : Math.Max(1, report.PageSize),
             Error = optionsError
         });
+    }
+
+    private static string GetDisplayDefault(ReportParameter parameter)
+    {
+        if (parameter.Type != "ListBox" || string.IsNullOrWhiteSpace(parameter.DefaultValue))
+            return parameter.DefaultValue ?? string.Empty;
+
+        try
+        {
+            using var document = JsonDocument.Parse(parameter.DefaultValue);
+            if (document.RootElement.ValueKind != JsonValueKind.Array)
+                return string.Empty;
+
+            return string.Join(",", document.RootElement.EnumerateArray()
+                .Select(value => value.ValueKind == JsonValueKind.String
+                    ? value.GetString()
+                    : value.ToString())
+                .Where(value => !string.IsNullOrWhiteSpace(value)));
+        }
+        catch (JsonException)
+        {
+            return string.Empty;
+        }
     }
 
     private async Task<VahedTejari?> GetAuthorizedSelectedConnectionAsync(CancellationToken cancellationToken)
@@ -133,11 +161,24 @@ public sealed class ReportsController(
         }
 
         await selectedConnection.SelectAsync(connection, cancellationToken);
-        var values = submittedValues?.ToDictionary(
-            pair => pair.Key,
-            pair => string.Join(",", pair.Value ?? []),
-            StringComparer.OrdinalIgnoreCase)
-            ?? new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        var values = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var pair in submittedValues ?? new Dictionary<string, string[]>())
+        {
+            var parameter = report.Parameters.FirstOrDefault(item =>
+                string.Equals(item.Name, pair.Key, StringComparison.OrdinalIgnoreCase));
+            values[pair.Key] = parameter?.Type == "Checkbox"
+                ? pair.Value?.LastOrDefault()
+                : string.Join(",", pair.Value ?? []);
+        }
+
+        foreach (var parameter in report.Parameters)
+        {
+            if (string.IsNullOrWhiteSpace(values.GetValueOrDefault(parameter.Name)) &&
+                !string.IsNullOrWhiteSpace(parameter.DefaultValue))
+            {
+                values[parameter.Name] = GetDisplayDefault(parameter);
+            }
+        }
         var savedPreferences = await settings.GetAsync(id, cancellationToken);
         var hasSubmittedFilters = Request.Form.Keys.Any(key =>
             key.StartsWith("filters[", StringComparison.OrdinalIgnoreCase));
