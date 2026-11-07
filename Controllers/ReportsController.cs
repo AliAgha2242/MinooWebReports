@@ -1,5 +1,8 @@
 using System.Data;
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+using Microsoft.Extensions.Caching.Memory;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,6 +18,7 @@ public sealed class ReportsController(
     ISelectedConnectionService selectedConnection,
     ICompanyAppLocationService companyLocations,
     IUserReportSettingsService settings,
+    IMemoryCache reportCache,
     ILogger<ReportsController> logger) : Controller
 {
     [HttpGet]
@@ -167,8 +171,29 @@ public sealed class ReportsController(
 
         try
         {
-            await LoadParameterOptionsAsync(report, connection, cancellationToken);
-            var raw = await execution.ExecuteAsync(report, values, connection, cancellationToken);
+            // Parameter options are only needed on the Run page, not while paging an existing result.
+            // Cache the raw report rows briefly per user, report, connection and parameter set.
+            var cachePayload = JsonSerializer.Serialize(new
+            {
+                report.Id,
+                report.SourceType,
+                report.SqlQuery,
+                report.ExcelFileName,
+                ExcelContentHash = report.ExcelContent is null
+                    ? null
+                    : Convert.ToHexString(SHA256.HashData(report.ExcelContent)),
+                Connection = connection.VahedetejariSn,
+                User = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("UserCode"),
+                Values = values.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase).ToArray()
+            });
+            var cacheKey = "report-result:" + Convert.ToHexString(
+                SHA256.HashData(Encoding.UTF8.GetBytes(cachePayload)));
+            var raw = await reportCache.GetOrCreateAsync(cacheKey, async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(45);
+                entry.Priority = CacheItemPriority.Normal;
+                return await execution.ExecuteAsync(report, values, connection, cancellationToken);
+            }) ?? throw new InvalidOperationException("نتیجه گزارش در دسترس نیست.");
             var validColumns = raw.Columns.Cast<DataColumn>()
                 .Select(column => column.ColumnName).ToArray();
 
