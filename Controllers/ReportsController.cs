@@ -182,8 +182,17 @@ public sealed class ReportsController(
                 ExcelContentHash = report.ExcelContent is null
                     ? null
                     : Convert.ToHexString(SHA256.HashData(report.ExcelContent)),
-                Connection = connection.VahedetejariSn,
-                User = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("UserCode"),
+                Connection = new
+                {
+                    connection.VahedetejariSn,
+                    connection.Server,
+                    connection.ServerIp,
+                    connection.DataBAset
+                },
+                User = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                    ?? User.FindFirstValue("UserCode")
+                    ?? User.Identity?.Name
+                    ?? HttpContext.Session.Id,
                 Values = values.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase).ToArray()
             });
             var cacheKey = "report-result:" + Convert.ToHexString(
