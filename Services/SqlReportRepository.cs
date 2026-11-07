@@ -91,7 +91,7 @@ public sealed class SqlReportRepository(IConfiguration configuration) : IReportR
         const string parameterSql = """
             SELECT Id, ReportDefinitionId, Name, DisplayName, Type,
                    DataSource, DisplayNameField, ValueField, Options, SortOrder,
-                   ParameterTypeId, CalendarType, DateFormat, TimeFormat, DateTimeSeparator
+                   ParameterTypeId, CalendarType, DateFormat, TimeFormat, DateTimeSeparator, DefaultValue
             FROM dbo.ReportParameters
             WHERE ReportDefinitionId = @ReportDefinitionId
             ORDER BY SortOrder, Id;
@@ -123,7 +123,8 @@ public sealed class SqlReportRepository(IConfiguration configuration) : IReportR
                 CalendarType = parameterReader.IsDBNull(11) ? null : parameterReader.GetString(11),
                 DateFormat = parameterReader.IsDBNull(12) ? null : parameterReader.GetString(12),
                 TimeFormat = parameterReader.IsDBNull(13) ? null : parameterReader.GetString(13),
-                DateTimeSeparator = parameterReader.IsDBNull(14) ? null : parameterReader.GetString(14)
+                DateTimeSeparator = parameterReader.IsDBNull(14) ? null : parameterReader.GetString(14),
+                DefaultValue = parameterReader.IsDBNull(15) ? null : parameterReader.GetString(15)
             });
         }
 
