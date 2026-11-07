@@ -43,6 +43,14 @@
                     @foreach (var parameter in report.Parameters)
                     {
                         var isList = parameter.Type == "ListBox";
+                        var defaultHint = parameter.Type switch
+                        {
+                            "Checkbox" => "مقدار مجاز: true یا false",
+                            "RadioButton" or "ComboBox" => "مقدار گزینه (Value) را وارد کنید.",
+                            "Date" => "تاریخ مطابق تقویم و فرمت تعریف‌شده برای پارامتر.",
+                            "DateTime" => "تاریخ و ساعت مطابق فرمت تعریف‌شده برای پارامتر.",
+                            _ => "در صورت خالی گذاشتن، مقدار پیش‌فرضی اعمال نمی‌شود."
+                        };
                         <form asp-action="SaveDefault" method="post" class="reports-parameter-field" style="min-width:0">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="reportId" value="@report.Id" />
@@ -58,17 +66,7 @@
                                 <input id="default-@parameter.Id" name="defaultValue" class="reports-input" value="@parameter.DefaultValue"
                                        type="@(parameter.Type == "Number" ? "number" : parameter.Type == "Date" && parameter.CalendarType != "Persian" ? "date" : parameter.Type == "Time" ? "time" : "text")"
                                        step="@(parameter.Type == "Number" ? "any" : null)" placeholder="بدون مقدار پیش‌فرض" />
-                                <small class="reports-field-hint">
-                                    @switch (parameter.Type)
-                                    {
-                                        case "Checkbox": <text>مقدار مجاز: true یا false</text>; break;
-                                        case "RadioButton":
-                                        case "ComboBox": <text>مقدار گزینه (Value) را وارد کنید.</text>; break;
-                                        case "Date": <text>تاریخ مطابق تقویم و فرمت تعریف‌شده برای پارامتر.</text>; break;
-                                        case "DateTime": <text>تاریخ و ساعت مطابق فرمت تعریف‌شده برای پارامتر.</text>; break;
-                                        default: <text>در صورت خالی گذاشتن، مقدار پیش‌فرضی اعمال نمی‌شود.</text>; break;
-                                    }
-                                </small>
+                                <small class="reports-field-hint">@defaultHint</small>
                             }
                             <button type="submit" class="reports-run-button" style="margin-top:8px">ذخیره مقدار پیش‌فرض</button>
                         </form>
