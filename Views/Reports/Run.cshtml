@@ -105,7 +105,10 @@
                             <label for="@fieldId">@parameter.DisplayName</label>
                             @if (parameter.Type == "Checkbox")
                             {
-                                <label class="reports-checkbox"><input id="@fieldId" type="checkbox" name="submittedValues[@parameter.Name]" value="true" checked="@(currentValue == "true")" /> فعال</label>
+                                <label class="reports-checkbox">
+                                    <input type="hidden" name="submittedValues[@parameter.Name]" value="false" />
+                                    <input id="@fieldId" type="checkbox" name="submittedValues[@parameter.Name]" value="true" checked="@(currentValue == "true")" /> فعال
+                                </label>
                             }
                             else if (parameter.Type == "RadioButton")
                             {
@@ -193,6 +196,10 @@
                                 {
                                     <small class="reports-field-hint">جداکننده تاریخ و ساعت در مقدار ارسالی: «@parameter.DateTimeSeparator»</small>
                                 }
+                            }
+                            @if (!string.IsNullOrWhiteSpace(parameter.DefaultValue))
+                            {
+                                <small class="reports-field-hint">مقدار پیش‌فرض: <bdi dir="auto">@parameter.DefaultValue</bdi> · در صورت خالی گذاشتن، همین مقدار استفاده می‌شود.</small>
                             }
                         </div>
                     }
