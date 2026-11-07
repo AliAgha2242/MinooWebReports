@@ -2,6 +2,9 @@
 @{
     ViewData["Title"] = "نتیجه " + Model.Report.Name;
     var visibleColumns = Model.AllColumns.Where(column => !Model.HiddenColumns.Contains(column, StringComparer.OrdinalIgnoreCase)).ToList();
+    var pagerStart = Math.Max(1, Model.Page - 2);
+    var pagerEnd = Math.Min(Model.TotalPages, pagerStart + 4);
+    pagerStart = Math.Max(1, pagerEnd - 4);
 }
 @functions {
     private static string DisplayCell(System.Data.DataRow row, string column) =>
@@ -193,14 +196,39 @@
 
         @if (Model.Report.NeedsPagination)
         {
-            <div class="reports-pagination">
-                <span>نمایش @Model.Result.Rows.Count از @Model.TotalRows.ToString("N0") رکورد</span>
-                <div>
-                    <button type="submit" name="page" value="@(Model.Page - 1)" class="reports-page-button" disabled="@(Model.Page <= 1)">قبلی</button>
-                    <strong>@Model.Page / @Model.TotalPages</strong>
-                    <button type="submit" name="page" value="@(Model.Page + 1)" class="reports-page-button" disabled="@(Model.Page >= Model.TotalPages)">بعدی</button>
+            <nav class="reports-pagination" aria-label="صفحه‌بندی گزارش">
+                <div class="reports-pagination-summary">
+                    <strong>@Model.TotalRows.ToString("N0")</strong>
+                    <span>رکورد</span>
+                    <i></i>
+                    <span>صفحه <bdi>@Model.Page</bdi> از <bdi>@Model.TotalPages</bdi></span>
                 </div>
-            </div>
+                <div class="reports-pagination-actions">
+                    <button type="submit" name="page" value="@(Model.Page - 1)" class="reports-page-button reports-page-arrow" aria-label="صفحه قبل" title="صفحه قبل" disabled="@(Model.Page <= 1)">‹</button>
+                    @if (pagerStart > 1)
+                    {
+                        <button type="submit" name="page" value="1" class="reports-page-button">1</button>
+                        @if (pagerStart > 2) { <span class="reports-page-ellipsis">…</span> }
+                    }
+                    @for (var pageNumber = pagerStart; pageNumber <= pagerEnd; pageNumber++)
+                    {
+                        if (pageNumber == Model.Page)
+                        {
+                            <span class="reports-page-button is-current" aria-current="page">@pageNumber</span>
+                        }
+                        else
+                        {
+                            <button type="submit" name="page" value="@pageNumber" class="reports-page-button">@pageNumber</button>
+                        }
+                    }
+                    @if (pagerEnd < Model.TotalPages)
+                    {
+                        @if (pagerEnd < Model.TotalPages - 1) { <span class="reports-page-ellipsis">…</span> }
+                        <button type="submit" name="page" value="@Model.TotalPages" class="reports-page-button">@Model.TotalPages</button>
+                    }
+                    <button type="submit" name="page" value="@(Model.Page + 1)" class="reports-page-button reports-page-arrow" aria-label="صفحه بعد" title="صفحه بعد" disabled="@(Model.Page >= Model.TotalPages)">›</button>
+                </div>
+            </nav>
         }
         else
         {
