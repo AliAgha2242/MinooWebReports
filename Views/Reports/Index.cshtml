@@ -12,6 +12,10 @@
         <nav class="admin-menu" aria-label="منوی اصلی">
             <a class="admin-menu-link" asp-controller="Home" asp-action="Index"><span class="admin-menu-icon">⌂</span><span>داشبورد</span></a>
             <a class="admin-menu-link active" asp-controller="Reports" asp-action="Index"><span class="admin-menu-icon">▤</span><span>گزارش‌ها</span><span class="admin-menu-active-dot"></span></a>
+            @if (User.IsInRole("ReportsAdmin") || (Context.RequestServices.GetService<IConfiguration>()?.GetSection("Reports:AdminUserCodes").Get<string[]>() ?? Array.Empty<string>()).Contains(User.FindFirst("UserCode")?.Value, StringComparer.OrdinalIgnoreCase))
+            {
+                <a class="admin-menu-link" asp-controller="AdminReports" asp-action="Index"><span class="admin-menu-icon">⚙</span><span>مدیریت پارامترها</span></a>
+            }
         </nav>
     </aside>
     <section class="admin-main">
