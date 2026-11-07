@@ -91,6 +91,23 @@ dotnet run
 - Grouping is applied after filtering and before pagination; group keys are sorted ascending to keep each group's rows together. A group that crosses a page boundary is shown with its heading again on the next page.
 - Per-user/per-report grid preferences, including grouping columns, are stored in Redis.
 
+## Default parameter values and administration
+
+Configure the user codes allowed to manage parameter defaults on the Reports deployment:
+
+```text
+Reports__AdminUserCodes__0=<admin-user-code>
+Reports__AdminUserCodes__1=<another-admin-user-code>
+```
+
+Only configured users can open `/AdminReports` and update defaults. The feature stores defaults in `dbo.ReportParameters.DefaultValue`. Apply `Database/Migrations/20261107_AddDefaultValueToReportParameters.sql` once before deploying the application changes.
+
+- Text, Number, Date, Time and DateTime defaults are stored as text in the parameter's configured format.
+- Checkbox defaults are `true` or `false`.
+- RadioButton and ComboBox defaults are a single option value.
+- ListBox defaults are JSON arrays containing numeric values, for example `[12, 14.5]`.
+- On the run form, defaults are prefilled and identified to the user. Blank or missing values fall back to the default; an unchecked checkbox is submitted as `false`.
+
 ## Metadata database
 
 The application expects these columns:
