@@ -197,12 +197,22 @@ public sealed class ReportsController(
             });
             var cacheKey = "report-result:" + Convert.ToHexString(
                 SHA256.HashData(Encoding.UTF8.GetBytes(cachePayload)));
-            var raw = await reportCache.GetOrCreateAsync(cacheKey, async entry =>
+            DataTable raw;
+            if (Request.Form.ContainsKey("page"))
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(45);
-                entry.Priority = CacheItemPriority.Normal;
-                return await execution.ExecuteAsync(report, values, connection, cancellationToken);
-            }) ?? throw new InvalidOperationException("نتیجه گزارش در دسترس نیست.");
+                raw = await reportCache.GetOrCreateAsync(cacheKey, async entry =>
+                {
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(45);
+                    entry.Priority = CacheItemPriority.Normal;
+                    return await execution.ExecuteAsync(report, values, connection, cancellationToken);
+                }) ?? throw new InvalidOperationException("نتیجه گزارش در دسترس نیست.");
+            }
+            else
+            {
+                // A fresh Run submission must always execute the report again.
+                raw = await execution.ExecuteAsync(report, values, connection, cancellationToken);
+                reportCache.Set(cacheKey, raw, TimeSpan.FromSeconds(45));
+            }
             var validColumns = raw.Columns.Cast<DataColumn>()
                 .Select(column => column.ColumnName).ToArray();
 
