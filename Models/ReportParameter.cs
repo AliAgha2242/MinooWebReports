@@ -17,4 +17,5 @@ public sealed class ReportParameter
     public string? DateFormat { get; set; }
     public string? TimeFormat { get; set; }
     public string? DateTimeSeparator { get; set; }
+    public string? DefaultValue { get; set; }
 }
