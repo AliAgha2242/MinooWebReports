@@ -121,8 +121,8 @@
                             }
                             else if (parameter.Type == "ListBox")
                             {
-                                <input type="hidden" name="submittedListBoxes[@parameter.Name]" value="true" />
                                 var selectedValues = (currentValue ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                                <input type="hidden" name="submittedListBoxes[@parameter.Name]" value="true" />
                                 <div class="reports-searchable-listbox" data-searchable-listbox>
                                     <button type="button" class="reports-input reports-listbox-trigger"
                                             data-listbox-trigger aria-expanded="false"
