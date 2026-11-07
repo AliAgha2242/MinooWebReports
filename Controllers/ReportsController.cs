@@ -150,6 +150,7 @@ public sealed class ReportsController(
     public async Task<IActionResult> Run(
         int id,
         Dictionary<string, string[]>? submittedValues,
+        Dictionary<string, string>? submittedListBoxes,
         Dictionary<string, string?>? filters,
         string? sortColumn,
         bool sortDescending,
@@ -186,7 +187,10 @@ public sealed class ReportsController(
 
         foreach (var parameter in report.Parameters)
         {
-            if (string.IsNullOrWhiteSpace(values.GetValueOrDefault(parameter.Name)) &&
+            var listBoxWasSubmitted = parameter.Type == "ListBox" &&
+                submittedListBoxes?.ContainsKey(parameter.Name) == true;
+            if (!listBoxWasSubmitted &&
+                string.IsNullOrWhiteSpace(values.GetValueOrDefault(parameter.Name)) &&
                 !string.IsNullOrWhiteSpace(parameter.DefaultValue))
             {
                 values[parameter.Name] = GetDisplayDefault(parameter);
