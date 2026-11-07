@@ -175,9 +175,9 @@ public sealed class SqlReportExecutionService(
 
         while (await reader.ReadAsync(cancellationToken))
         {
-            if (table.Rows.Count >= maxRows)
-                throw new InvalidOperationException(
-                    $"تعداد رکوردهای خروجی از سقف مجاز ({maxRows:N0}) بیشتر است. لطفاً پارامترهای گزارش را محدودتر کنید.");
+            //if (table.Rows.Count >= maxRows)
+            //    throw new InvalidOperationException(
+            //        $"تعداد رکوردهای خروجی از سقف مجاز ({maxRows:N0}) بیشتر است. لطفاً پارامترهای گزارش را محدودتر کنید.");
 
             var row = table.NewRow();
             for (var i = 0; i < reader.FieldCount; i++)
