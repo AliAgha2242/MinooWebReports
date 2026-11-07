@@ -64,7 +64,7 @@
                             else
                             {
                                 <input id="default-@parameter.Id" name="defaultValue" class="reports-input" value="@parameter.DefaultValue"
-                                       type="@(parameter.Type == "Number" ? "number" : parameter.Type == "Date" && parameter.CalendarType != "Persian" ? "date" : parameter.Type == "Time" ? "time" : "text")"
+                                       type="@(parameter.Type == "Number" ? "number" : "text")"
                                        step="@(parameter.Type == "Number" ? "any" : null)" placeholder="بدون مقدار پیش‌فرض" />
                                 <small class="reports-field-hint">@defaultHint</small>
                             }
