@@ -1,0 +1,82 @@
+@model MinooWebReports.Models.ReportParameterAdminViewModel
+@{
+    ViewData["Title"] = "مدیریت مقدار پیش‌فرض پارامترها";
+}
+<main class="admin-page reports-dashboard">
+    <aside class="admin-sidebar">
+        <a class="admin-brand" asp-controller="Home" asp-action="Index"><span class="brand-mark">M<span>•</span></span><span class="brand-copy"><strong>MINOO</strong><span>WEB REPORTS</span></span></a>
+        <div class="admin-sidebar-label">سامانه گزارشات</div>
+        <nav class="admin-menu" aria-label="منوی اصلی">
+            <a class="admin-menu-link" asp-controller="Home" asp-action="Index"><span class="admin-menu-icon">⌂</span><span>داشبورد</span></a>
+            <a class="admin-menu-link" asp-controller="Reports" asp-action="Index"><span class="admin-menu-icon">▤</span><span>گزارش‌ها</span></a>
+            <a class="admin-menu-link active" asp-controller="AdminReports" asp-action="Index"><span class="admin-menu-icon">⚙</span><span>مدیریت پارامترها</span></a>
+        </nav>
+    </aside>
+    <section class="admin-main">
+        <header class="admin-topbar">
+            <div><span class="admin-breadcrumb">MINOO / ADMIN / PARAMETERS</span><h1>مدیریت پارامترهای گزارش</h1></div>
+            <a class="reports-back-link" asp-controller="Reports" asp-action="Index">بازگشت به گزارش‌ها</a>
+        </header>
+        <section class="admin-welcome reports-welcome">
+            <div><span class="admin-eyebrow"><span class="status-dot"></span> DEFAULT PARAMETER VALUES</span><h2>مقدار پیش‌فرض پارامترها</h2><p>مقدار دلخواه را ثبت کنید تا در فرم اجرای گزارش از ابتدا نمایش داده شود.</p></div>
+            <span class="admin-welcome-symbol">⚙</span>
+        </section>
+        @if (TempData["Error"] is string error) { <div class="report-message report-message-error" role="alert">@error</div> }
+        @if (TempData["Success"] is string success) { <div class="report-message report-message-success" role="status">@success</div> }
+        @if (Model.Reports.Count == 0)
+        {
+            <section class="report-builder"><p class="reports-demo-hint">گزارش فعالی برای مدیریت وجود ندارد.</p></section>
+        }
+        @foreach (var report in Model.Reports)
+        {
+            <section class="report-builder" style="margin-bottom:24px">
+                <div class="report-parameters-heading">
+                    <div><span class="report-step">REPORT #@report.Id</span><h3>@report.Name</h3><p>@report.Parameters.Count پارامتر تعریف‌شده</p></div>
+                </div>
+                @if (report.Parameters.Count == 0)
+                {
+                    <p class="reports-demo-hint">این گزارش پارامتری ندارد.</p>
+                }
+                else
+                {
+                    <div class="reports-parameter-grid">
+                    @foreach (var parameter in report.Parameters)
+                    {
+                        var isList = parameter.Type == "ListBox";
+                        <form asp-action="SaveDefault" method="post" class="reports-parameter-field" style="min-width:0">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="reportId" value="@report.Id" />
+                            <input type="hidden" name="parameterId" value="@parameter.Id" />
+                            <label for="default-@parameter.Id">@parameter.DisplayName <small>(@parameter.Type)</small></label>
+                            @if (isList)
+                            {
+                                <textarea id="default-@parameter.Id" name="defaultValue" class="reports-input" rows="2" dir="ltr" placeholder='مثال: [12, 14.5]'>@parameter.DefaultValue</textarea>
+                                <small class="reports-field-hint">آرایه JSON؛ مقادیر فقط عدد صحیح یا اعشاری. برای پاک کردن، فیلد را خالی ذخیره کنید.</small>
+                            }
+                            else
+                            {
+                                <input id="default-@parameter.Id" name="defaultValue" class="reports-input" value="@parameter.DefaultValue"
+                                       type="@(parameter.Type == "Number" ? "number" : parameter.Type == "Date" && parameter.CalendarType != "Persian" ? "date" : parameter.Type == "Time" ? "time" : "text")"
+                                       step="@(parameter.Type == "Number" ? "any" : null)" placeholder="بدون مقدار پیش‌فرض" />
+                                <small class="reports-field-hint">
+                                    @switch (parameter.Type)
+                                    {
+                                        case "Checkbox": <text>مقدار مجاز: true یا false</text>; break;
+                                        case "RadioButton":
+                                        case "ComboBox": <text>مقدار گزینه (Value) را وارد کنید.</text>; break;
+                                        case "Date": <text>تاریخ مطابق تقویم و فرمت تعریف‌شده برای پارامتر.</text>; break;
+                                        case "DateTime": <text>تاریخ و ساعت مطابق فرمت تعریف‌شده برای پارامتر.</text>; break;
+                                        default: <text>در صورت خالی گذاشتن، مقدار پیش‌فرضی اعمال نمی‌شود.</text>; break;
+                                    }
+                                </small>
+                            }
+                            <button type="submit" class="reports-run-button" style="margin-top:8px">ذخیره مقدار پیش‌فرض</button>
+                        </form>
+                    }
+                    </div>
+                }
+            </section>
+        }
+        <footer class="admin-footer"><span>© @DateTime.Now.Year گروه صنعتی مینو</span><span>MINOO WEB REPORTS</span></footer>
+    </section>
+</main>
