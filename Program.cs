@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IAuthenticateService, AuthenticateService>();
 
 builder.Services
