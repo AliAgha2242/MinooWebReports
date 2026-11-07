@@ -113,7 +113,7 @@ Only configured users can open `/AdminReports` and update defaults. The feature 
 The application expects these columns:
 
 - `ReportDefinitions`: `Id`, `Name`, `SourceType`, `SqlQuery`, `ExcelFileName`, `ExcelContent`, `NeedsPagination`, `PageSize`, `IsDeleted`.
-- `ReportParameters`: `Id`, `ReportDefinitionId`, `Name`, `DisplayName`, `Type`, `DataSource`, `DisplayNameField`, `ValueField`, `Options`, `SortOrder`.
+- `ReportParameters`: `Id`, `ReportDefinitionId`, `Name`, `DisplayName`, `Type`, `DataSource`, `DisplayNameField`, `ValueField`, `Options`, `SortOrder`, `DefaultValue`.
 
 Both `SourceType=Sql` and stored `.xlsx` content are executable. Excel reports read the first worksheet, use its first used row as headers, and can filter rows by report parameters whose names match column names. Query-backed parameter options execute a single read-only SELECT against the selected target database and are limited to 2,000 options.
 
