@@ -19,11 +19,13 @@ public sealed class ReportsController(
     ICompanyAppLocationService companyLocations,
     IUserReportSettingsService settings,
     IMemoryCache reportCache,
-    ILogger<ReportsController> logger) : Controller
+    ILogger<ReportsController> logger,
+    IConfiguration configuration) : Controller
 {
     [HttpGet]
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
+        ViewBag.IsReportsAdmin = IsReportsAdmin();
         var authorizedConnection = await GetAuthorizedSelectedConnectionAsync(cancellationToken);
         if (selectedConnection.Current is not null && authorizedConnection is null)
             await selectedConnection.ClearAsync(cancellationToken);
@@ -78,6 +80,17 @@ public sealed class ReportsController(
             PageSize = report.NeedsPagination ? Math.Clamp(report.PageSize > 0 ? report.PageSize : 25, 1, 5000) : Math.Max(1, report.PageSize),
             Error = optionsError
         });
+    }
+
+    private bool IsReportsAdmin()
+    {
+        var configuredCodes = configuration.GetSection("Reports:AdminUserCodes").Get<string[]>() ?? [];
+        var singleSetting = configuration["Reports:AdminUserCodes"];
+        var allowedCodes = configuredCodes
+            .Concat((singleSetting ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var userCode = User.FindFirstValue("UserCode");
+        return !string.IsNullOrWhiteSpace(userCode) && allowedCodes.Contains(userCode);
     }
 
     private static string GetDisplayDefault(ReportParameter parameter)
