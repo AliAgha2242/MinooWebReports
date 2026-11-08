@@ -22,7 +22,7 @@
                 گزارش تعاملی · فیلتر، گروه‌بندی و شخصی‌سازی ستون‌ها
                 @if (Model.ExecutionConnections.Count > 1)
                 {
-                    <span> · تجمیع‌شده از @Model.ExecutionConnections.Count سرور</span>
+                    <span> · تجمیع‌شده از @Model.ExecutionConnections.Count سرور: <bdi>@string.Join("، ", Model.ExecutionConnections.Select(item => item.Server))</bdi></span>
                 }
             </p>
         </div>
