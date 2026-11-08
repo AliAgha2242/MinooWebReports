@@ -135,3 +135,20 @@ Preferences include page size, hidden columns, filters, sorting, column widths, 
 - Store connection strings and credentials in environment variables or a secret store, never in source control.
 - The metadata connection string must be configured as `ConnectionStrings__ReportsMetadata`; it is intentionally not hard-coded.
 - The Minoo `AppConfig.json` server directory must be present and maintained in each deployment environment.
+
+## Multi-server report execution
+
+SQL report definitions now support two execution modes:
+
+- UseDefaultServer = 1: execute against the user's currently selected and authorized business unit.
+- UseDefaultServer = 0: execute against every VahedeTejariSN stored in dbo.ReportDefinitionServers.
+
+Before a multi-server run, Reports checks the current user's access to all configured targets. If any target is unauthorized or missing, the report is rejected rather than returning a partial result. Results from the configured servers are merged by column name before filtering, sorting, grouping and pagination.
+
+Apply Database/Migrations/20261108_AddMultiServerReportTargets.sql to the database containing dbo.ReportDefinitions before deploying. If MinooWebCore and MinooWebReports point to the same metadata database, run the script only once. Existing single-server selections are migrated into ReportDefinitionServers.
+
+### Multi-server query service handoff
+
+The actual per-server SQL execution is intentionally left for the application owner. Implement IMultiServerReportQueryService in Services/IMultiServerReportQueryService.cs. It receives the report, parameter values and authorized server list, and returns one ServerReportExecutionResult per requested server, each containing its server identity and a DataTable.
+
+The current NotConfiguredMultiServerReportQueryService is a registered placeholder that throws a clear error when a multi-server report is run. Replace its registration in Program.cs with your implementation when ready. Default-server reports continue to use the existing IReportExecutionService and are unaffected.
