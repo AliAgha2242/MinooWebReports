@@ -156,7 +156,7 @@ Multi-server SQL reports are sent through RabbitSender by NotConfiguredMultiServ
 
 The SQL text is sent unchanged. The Rabbit receiver must bind values from `parameters` to `SqlParameter` instances; it must never inject values into SQL by string replacement. The `parameterTypes` map lets the receiver convert Number, Date, Time, DateTime and Checkbox values and handle ListBox's comma-separated numeric values explicitly. The receiver must continue returning a JSON-serialized DataTable in each successful Rabbit result.
 
-The producer validates the report's read-only SELECT query and parameter values before sending. It also rejects missing, duplicate, unexpected, empty or non-deserializable server responses rather than merging incomplete results. The RabbitSender API currently used by the project exposes a synchronous `SendTransactionalParallelism` call, which is offloaded from the ASP.NET request thread; cancellation cannot interrupt a call already running inside that synchronous library method.
+The producer validates the report's read-only SELECT query and parameter values before sending. It also rejects missing, duplicate, unexpected, empty or non-deserializable server responses rather than merging incomplete results. The RabbitSender API currently used by the project exposes a synchronous `SendTransactionalParallelism` call, which runs on a dedicated background thread instead of occupying an ASP.NET request or shared ThreadPool thread; cancellation cannot interrupt a call already running inside that synchronous library method.
 
 Dynamic ListBox/ComboBox option queries are executed against every selected server and their options are merged by value (the first label for a duplicate value is retained). Static options are loaded once.
 
