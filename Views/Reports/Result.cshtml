@@ -18,7 +18,13 @@
         <div class="reports-result-header-title">
             <span class="admin-breadcrumb">MINOO / REPORTS / RESULT</span>
             <h1>@Model.Report.Name</h1>
-            <p>گزارش تعاملی · فیلتر، گروه‌بندی و شخصی‌سازی ستون‌ها</p>
+            <p>
+                گزارش تعاملی · فیلتر، گروه‌بندی و شخصی‌سازی ستون‌ها
+                @if (Model.ExecutionConnections.Count > 1)
+                {
+                    <span> · تجمیع‌شده از @Model.ExecutionConnections.Count سرور</span>
+                }
+            </p>
         </div>
         <div class="reports-result-header-actions">
             <button type="button" class="reports-fullscreen-button" data-report-fullscreen aria-pressed="false">
