@@ -20,7 +20,12 @@
             <h1>@Model.Report.Name</h1>
             <p>گزارش تعاملی · فیلتر، گروه‌بندی و شخصی‌سازی ستون‌ها</p>
         </div>
-        <a class="reports-back-link" asp-action="Run" asp-route-id="@Model.Report.Id">بازگشت به پارامترها</a>
+        <div class="reports-result-header-actions">
+            <button type="button" class="reports-fullscreen-button" data-report-fullscreen aria-pressed="false">
+                <span aria-hidden="true">⛶</span><span data-fullscreen-label>تمام‌صفحه</span>
+            </button>
+            <a class="reports-back-link" asp-action="Run" asp-route-id="@Model.Report.Id">بازگشت به پارامترها</a>
+        </div>
     </header>
 
     <form asp-action="Run" method="post" class="reports-result-workspace" data-report-grid-form>
@@ -270,3 +275,36 @@
 
     <footer class="reports-result-footer"><span>© @DateTime.Now.Year گروه صنعتی مینو</span><span>MINOO WEB REPORTS</span></footer>
 </main>
+
+@section Scripts {
+    <script>
+        (() => {
+            const page = document.querySelector(".reports-result-page");
+            const button = document.querySelector("[data-report-fullscreen]");
+            const label = document.querySelector("[data-fullscreen-label]");
+            if (!page || !button) return;
+
+            const syncState = () => {
+                const active = document.fullscreenElement === page;
+                button.setAttribute("aria-pressed", active.toString());
+                if (label) label.textContent = active ? "خروج از تمام‌صفحه" : "تمام‌صفحه";
+                button.classList.toggle("is-active", active);
+            };
+
+            button.addEventListener("click", async () => {
+                try {
+                    if (document.fullscreenElement === page) {
+                        await document.exitFullscreen();
+                    } else if (!document.fullscreenElement) {
+                        await page.requestFullscreen();
+                    }
+                } catch (error) {
+                    console.error("Fullscreen mode could not be changed.", error);
+                }
+            });
+
+            document.addEventListener("fullscreenchange", syncState);
+            syncState();
+        })();
+    </script>
+}
