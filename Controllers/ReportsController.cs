@@ -15,6 +15,7 @@ namespace MinooWebReports.Controllers;
 public sealed class ReportsController(
     IReportRepository reports,
     IReportExecutionService execution,
+    IMultiServerReportQueryService multiServerQuery,
     ISelectedConnectionService selectedConnection,
     ICompanyAppLocationService companyLocations,
     IUserReportSettingsService settings,
@@ -45,14 +46,16 @@ public sealed class ReportsController(
         if (report is null)
             return NotFound();
 
-        var connection = await GetAuthorizedSelectedConnectionAsync(cancellationToken);
-        if (connection is null)
+        var executionConnections = await GetAuthorizedReportConnectionsAsync(report, cancellationToken);
+        if (executionConnections.Count == 0)
         {
-            TempData["Error"] = "محل اتصال انتخاب‌شده در AppConfig.json پیدا نشد. لطفاً دوباره انتخاب کنید.";
+            TempData["Error"] = "برای اجرای این گزارش، محل اجرای پیش‌فرض را انتخاب کنید یا مطمئن شوید به تمام سرورهای تعریف‌شده دسترسی دارید.";
             return RedirectToAction("Index", "Home");
         }
 
-        await selectedConnection.SelectAsync(connection, cancellationToken);
+        var connection = executionConnections[0];
+        if (report.UseDefaultServer)
+            await selectedConnection.SelectAsync(connection, cancellationToken);
         var preferences = await settings.GetAsync(id, cancellationToken);
         string? optionsError = null;
         try
@@ -77,6 +80,7 @@ public sealed class ReportsController(
             Report = report,
             Values = initialValues,
             SelectedConnection = connection,
+            ExecutionConnections = executionConnections,
             PageSize = report.NeedsPagination ? Math.Clamp(report.PageSize > 0 ? report.PageSize : 25, 1, 5000) : Math.Max(1, report.PageSize),
             Error = optionsError
         });
@@ -132,6 +136,101 @@ public sealed class ReportsController(
         return authorized.SingleOrDefault(x => x.VahedetejariSn == saved.VahedetejariSn);
     }
 
+    private async Task<IReadOnlyList<VahedTejari>> GetAuthorizedReportConnectionsAsync(
+        ReportDefinition report,
+        CancellationToken cancellationToken)
+    {
+        if (report.UseDefaultServer)
+        {
+            var defaultConnection = await GetAuthorizedSelectedConnectionAsync(cancellationToken);
+            return defaultConnection is null ? [] : [defaultConnection];
+        }
+
+        var userCode = User.FindFirstValue("UserCode");
+        if (string.IsNullOrWhiteSpace(userCode) || report.ServerVahedeTejariSNs.Count == 0)
+            return [];
+
+        var authorized = await companyLocations.GetAllLocationAsync(new UserModel
+        {
+            UserCode = userCode,
+            UserName = User.Identity?.Name ?? string.Empty
+        }, cancellationToken);
+
+        var authorizedById = authorized
+            .GroupBy(item => item.VahedetejariSn)
+            .ToDictionary(group => group.Key, group => group.First());
+        var requestedIds = report.ServerVahedeTejariSNs.Distinct().ToArray();
+
+        // Do not silently return partial results if the user cannot access one of the configured servers.
+        if (requestedIds.Length != report.ServerVahedeTejariSNs.Count ||
+            requestedIds.Any(id => !authorizedById.ContainsKey(id)))
+            return [];
+
+        return requestedIds.Select(id => authorizedById[id]).ToArray();
+    }
+
+    private async Task<DataTable> ExecuteReportDataAsync(
+        ReportDefinition report,
+        IReadOnlyDictionary<string, string?> values,
+        IReadOnlyList<VahedTejari> connections,
+        CancellationToken cancellationToken)
+    {
+        if (report.UseDefaultServer ||
+            !string.Equals(report.SourceType, "Sql", StringComparison.OrdinalIgnoreCase))
+        {
+            return await execution.ExecuteAsync(report, values, connections[0], cancellationToken);
+        }
+
+        var serverResults = await multiServerQuery.ExecuteAsync(
+            report, values, connections, cancellationToken);
+
+        var requestedIds = connections.Select(item => item.VahedetejariSn).ToHashSet();
+        var returnedIds = serverResults.Select(item => item.Server.VahedetejariSn).ToArray();
+        if (serverResults.Count != requestedIds.Count ||
+            returnedIds.Distinct().Count() != requestedIds.Count ||
+            returnedIds.Any(id => !requestedIds.Contains(id)))
+        {
+            throw new InvalidOperationException("اجرای گزارش روی تمام سرورهای انتخاب‌شده کامل نشد؛ نتیجه ناقص نمایش داده نمی‌شود.");
+        }
+
+        return MergeServerResults(serverResults);
+    }
+
+    private static DataTable MergeServerResults(
+        IReadOnlyList<ServerReportExecutionResult> serverResults)
+    {
+        var merged = new DataTable();
+        var columnNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var result in serverResults)
+        {
+            foreach (DataColumn column in result.Data.Columns)
+            {
+                if (columnNames.Add(column.ColumnName))
+                    merged.Columns.Add(column.ColumnName, typeof(string));
+            }
+        }
+
+        foreach (var result in serverResults)
+        {
+            foreach (DataRow sourceRow in result.Data.Rows)
+            {
+                var targetRow = merged.NewRow();
+                foreach (DataColumn sourceColumn in result.Data.Columns)
+                {
+                    var value = sourceRow[sourceColumn];
+                    targetRow[sourceColumn.ColumnName] = value is DBNull
+                        ? DBNull.Value
+                        : Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
+                }
+
+                merged.Rows.Add(targetRow);
+            }
+        }
+
+        return merged;
+    }
+
     private async Task LoadParameterOptionsAsync(
         ReportDefinition report,
         VahedTejari connection,
@@ -167,14 +266,16 @@ public sealed class ReportsController(
         if (report is null)
             return NotFound();
 
-        var connection = await GetAuthorizedSelectedConnectionAsync(cancellationToken);
-        if (connection is null)
+        var executionConnections = await GetAuthorizedReportConnectionsAsync(report, cancellationToken);
+        if (executionConnections.Count == 0)
         {
-            TempData["Error"] = "محل اتصال فعال نیست یا در AppConfig.json وجود ندارد. ابتدا یک محل اتصال معتبر انتخاب کنید.";
+            TempData["Error"] = "برای اجرای این گزارش، محل اجرای پیش‌فرض را انتخاب کنید یا مطمئن شوید به تمام سرورهای تعریف‌شده دسترسی دارید.";
             return RedirectToAction("Index", "Home");
         }
 
-        await selectedConnection.SelectAsync(connection, cancellationToken);
+        var connection = executionConnections[0];
+        if (report.UseDefaultServer)
+            await selectedConnection.SelectAsync(connection, cancellationToken);
         var values = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         foreach (var pair in submittedValues ?? new Dictionary<string, string[]>())
         {
@@ -240,13 +341,15 @@ public sealed class ReportsController(
                 ExcelContentHash = report.ExcelContent is null
                     ? null
                     : Convert.ToHexString(SHA256.HashData(report.ExcelContent)),
-                Connection = new
+                UseDefaultServer = report.UseDefaultServer,
+                ConfiguredServerIds = report.ServerVahedeTejariSNs.OrderBy(x => x).ToArray(),
+                Connections = executionConnections.Select(item => new
                 {
-                    connection.VahedetejariSn,
-                    connection.Server,
-                    connection.ServerIp,
-                    connection.DataBAset
-                },
+                    item.VahedetejariSn,
+                    item.Server,
+                    item.ServerIp,
+                    item.DataBAset
+                }).ToArray(),
                 User = User.FindFirstValue(ClaimTypes.NameIdentifier)
                     ?? User.FindFirstValue("UserCode")
                     ?? User.Identity?.Name
@@ -262,13 +365,13 @@ public sealed class ReportsController(
                 {
                     entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(45);
                     entry.Priority = CacheItemPriority.Normal;
-                    return await execution.ExecuteAsync(report, values, connection, cancellationToken);
+                    return await ExecuteReportDataAsync(report, values, executionConnections, cancellationToken);
                 }) ?? throw new InvalidOperationException("نتیجه گزارش در دسترس نیست.");
             }
             else
             {
                 // A fresh Run submission must always execute the report again.
-                raw = await execution.ExecuteAsync(report, values, connection, cancellationToken);
+                raw = await ExecuteReportDataAsync(report, values, executionConnections, cancellationToken);
                 reportCache.Set(cacheKey, raw, TimeSpan.FromSeconds(45));
             }
             var validColumns = raw.Columns.Cast<DataColumn>()
@@ -370,6 +473,7 @@ public sealed class ReportsController(
             {
                 Report = report,
                 SelectedConnection = connection,
+                ExecutionConnections = executionConnections,
                 Values = values,
                 Filters = filters,
                 Result = paged,
@@ -409,6 +513,7 @@ public sealed class ReportsController(
             {
                 Report = report,
                 SelectedConnection = connection,
+                ExecutionConnections = executionConnections,
                 Values = values,
                 PageSize = report.NeedsPagination ? Math.Clamp(report.PageSize > 0 ? report.PageSize : 25, 1, 5000) : Math.Max(1, report.PageSize),
                 Error = userMessage
