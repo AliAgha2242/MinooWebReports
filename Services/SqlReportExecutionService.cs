@@ -304,7 +304,7 @@ public sealed class SqlReportExecutionService(
         return table;
     }
 
-    private static void ValidateReportInputs(
+    internal static void ValidateReportInputs(
         ReportDefinition report,
         IReadOnlyDictionary<string, string?> values)
     {
@@ -399,7 +399,7 @@ public sealed class SqlReportExecutionService(
         return values;
     }
 
-    private static void ValidateReadOnlySelect(string sql)
+    internal static void ValidateReadOnlySelect(string sql)
     {
         if (string.IsNullOrWhiteSpace(sql) ||
             !sql.StartsWith("SELECT", StringComparison.OrdinalIgnoreCase))
