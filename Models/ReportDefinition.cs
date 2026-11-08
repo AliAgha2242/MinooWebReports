@@ -10,5 +10,7 @@ public sealed class ReportDefinition
     public byte[]? ExcelContent { get; set; }
     public bool NeedsPagination { get; set; }
     public int PageSize { get; set; } = 25;
+    public bool UseDefaultServer { get; set; } = true;
+    public IReadOnlyList<decimal> ServerVahedeTejariSNs { get; set; } = [];
     public IReadOnlyList<ReportParameter> Parameters { get; set; } = [];
 }
