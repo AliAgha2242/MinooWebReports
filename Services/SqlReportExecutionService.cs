@@ -324,24 +324,19 @@ public sealed class SqlReportExecutionService(
             if (parameter.Type is "Number" or "Date" or "Time" or "DateTime" or "Checkbox")
                 _ = ConvertValue(parameter, value);
 
-            if (parameter.Type is "RadioButton" or "ListBox" or "ComboBox")
+            if (parameter.Type == "ListBox")
             {
-                var allowed = ReadAllowedOptions(parameter.Options);
-                var submitted = parameter.Type == "ListBox"
-                    ? value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                    : new[] { value };
+                var submitted = value.Split(
+                    ',',
+                    StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-                if (parameter.Type == "ListBox" &&
-                    submitted.Any(item => !decimal.TryParse(item,
-                        System.Globalization.NumberStyles.Float,
-                        System.Globalization.CultureInfo.InvariantCulture, out _)))
+                if (submitted.Any(item => !decimal.TryParse(item,
+                    System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out _)))
                 {
                     throw new ArgumentException(
                         $"مقادیر انتخاب‌شده برای «{parameter.DisplayName}» باید عدد صحیح یا اعشاری باشند.");
                 }
-
-                if (submitted.Length == 0 || submitted.Any(item => !allowed.Contains(item)))
-                    throw new ArgumentException($"یکی از گزینه‌های انتخاب‌شده برای «{parameter.DisplayName}» معتبر نیست.");
             }
         }
     }
@@ -360,49 +355,6 @@ public sealed class SqlReportExecutionService(
                     $"مقدار گزینه «{value}» برای پارامتر «{displayName}» باید عدد صحیح یا اعشاری باشد.");
             }
         }
-    }
-
-    private static HashSet<string> ReadAllowedOptions(string? json)
-    {
-        var values = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        if (string.IsNullOrWhiteSpace(json))
-            return values;
-
-        try
-        {
-            using var document = System.Text.Json.JsonDocument.Parse(json);
-            var root = document.RootElement;
-            if (root.ValueKind == System.Text.Json.JsonValueKind.Array)
-            {
-                foreach (var item in root.EnumerateArray())
-                {
-                    if (item.ValueKind == System.Text.Json.JsonValueKind.String)
-                        values.Add(item.GetString() ?? string.Empty);
-                    else if (item.ValueKind == System.Text.Json.JsonValueKind.Object)
-                    {
-                        foreach (var property in item.EnumerateObject())
-                        {
-                            if (string.Equals(property.Name, "value", StringComparison.OrdinalIgnoreCase))
-                            {
-                                values.Add(property.Value.ToString());
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            else if (root.ValueKind == System.Text.Json.JsonValueKind.Object)
-            {
-                foreach (var property in root.EnumerateObject())
-                    values.Add(property.Name);
-            }
-        }
-        catch (System.Text.Json.JsonException)
-        {
-            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        }
-
-        return values;
     }
 
     private static void ValidateReadOnlySelect(string sql)
