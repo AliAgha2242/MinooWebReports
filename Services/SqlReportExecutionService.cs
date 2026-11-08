@@ -346,7 +346,7 @@ public sealed class SqlReportExecutionService(
         if (string.IsNullOrWhiteSpace(json))
             return;
 
-        foreach (var value in ReadAllowedOptions(json))
+        foreach (var value in ExtractOptionValues(json))
         {
             if (!decimal.TryParse(value, System.Globalization.NumberStyles.Float,
                     System.Globalization.CultureInfo.InvariantCulture, out _))
@@ -355,6 +355,48 @@ public sealed class SqlReportExecutionService(
                     $"مقدار گزینه «{value}» برای پارامتر «{displayName}» باید عدد صحیح یا اعشاری باشد.");
             }
         }
+    }
+
+    private static HashSet<string> ExtractOptionValues(string? json)
+    {
+        var values = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(json))
+            return values;
+
+        try
+        {
+            using var document = System.Text.Json.JsonDocument.Parse(json);
+            var root = document.RootElement;
+            if (root.ValueKind != System.Text.Json.JsonValueKind.Array)
+                return values;
+
+            foreach (var item in root.EnumerateArray())
+            {
+                if (item.ValueKind == System.Text.Json.JsonValueKind.String)
+                {
+                    values.Add(item.GetString() ?? string.Empty);
+                    continue;
+                }
+
+                if (item.ValueKind != System.Text.Json.JsonValueKind.Object)
+                    continue;
+
+                foreach (var property in item.EnumerateObject())
+                {
+                    if (string.Equals(property.Name, "value", StringComparison.OrdinalIgnoreCase))
+                    {
+                        values.Add(property.Value.ToString());
+                        break;
+                    }
+                }
+            }
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return values;
+        }
+
+        return values;
     }
 
     private static void ValidateReadOnlySelect(string sql)
