@@ -67,13 +67,17 @@ public sealed class NotConfiguredMultiServerReportQueryService : IMultiServerRep
             ReceiverVahedeTejariSn = server.VahedetejariSn
         }).ToArray();
 
-        // RabbitSender 6.5.3.4 exposes the synchronous SendTransactionalParallelism
-        // API used by this project. Offload that blocking call from the ASP.NET request
-        // thread. Cancellation can stop queued work, but cannot abort an in-flight
-        // synchronous RabbitSender call.
-        var results = await Task.Run(
+        // RabbitSender 6.5.3.4 is currently used through its synchronous API.
+        // Run it on a dedicated background thread rather than occupying an ASP.NET
+        // request or shared ThreadPool thread. Cancellation cannot interrupt an
+        // in-flight synchronous RabbitSender call.
+        var sendTask = Task.Factory.StartNew(
             () => client.SendTransactionalParallelism(sendModels),
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken,
+            TaskCreationOptions.LongRunning,
+            TaskScheduler.Default);
+
+        var results = await sendTask.ConfigureAwait(false);
 
         cancellationToken.ThrowIfCancellationRequested();
 
