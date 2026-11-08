@@ -356,3 +356,11 @@ h1 { font-size: 21px; line-height: 1.4; text-align: center; margin: 0; font-weig
  .reports-select-button { flex:1; }
  .reports-welcome { margin:17px 0; }
 }
+
+
+/* Global sign-out action for authenticated pages */
+.global-logout-form { position: fixed; z-index: 1000; top: 16px; left: 18px; margin: 0; }
+.global-logout-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 0 13px; border: 1px solid rgba(255,140,140,.28); border-radius: 10px; color: #ffc0c0; background: rgba(10,25,40,.88); box-shadow: 0 6px 20px rgba(0,0,0,.18); backdrop-filter: blur(10px); cursor: pointer; font: inherit; font-size: 11px; transition: border-color .2s, background .2s, color .2s; }
+.global-logout-button:hover { border-color: rgba(255,140,140,.65); color: #fff; background: rgba(119,39,48,.88); }
+.global-logout-button span:first-child { font-size: 17px; line-height: 1; }
+@media (max-width: 560px) { .global-logout-form { top: 10px; left: 10px; } .global-logout-button { min-height: 32px; padding: 0 10px; font-size: 10px; } }
