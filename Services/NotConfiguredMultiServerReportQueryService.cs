@@ -1,5 +1,13 @@
 using MinooWebReports.Models;
+using RabbitSender;
 
+
+
+using RabbitSender.Models.ApiModels;
+using RabbitSender.Models.RabbitModel;
+using RabbitSender.Utilities;
+using System.Data;
+using System.Linq;
 namespace MinooWebReports.Services;
 
 /// <summary>
@@ -9,11 +17,33 @@ namespace MinooWebReports.Services;
 /// </summary>
 public sealed class NotConfiguredMultiServerReportQueryService : IMultiServerReportQueryService
 {
-    public Task<IReadOnlyList<ServerReportExecutionResult>> ExecuteAsync(
+    public async Task<IReadOnlyList<ServerReportExecutionResult>> ExecuteAsync(
         ReportDefinition report,
         IReadOnlyDictionary<string, string?> values,
         IReadOnlyList<VahedTejari> servers,
-        CancellationToken cancellationToken = default) =>
-        throw new InvalidOperationException(
-            "سرویس اجرای Query چندسروره هنوز پیاده‌سازی نشده است. IMultiServerReportQueryService را تکمیل کنید.");
+        CancellationToken cancellationToken = default)
+    {
+        foreach (var item in report.Parameters)
+        {
+            report.SqlQuery.ToLower().Replace(item.Name.ToLower(), item.ValueField??item.DefaultValue);
+        }
+       
+        Dictionary<string, object?>? keyValuePairs = new Dictionary<string, object?>()
+        {
+            { "querytext",report.SqlQuery},
+        };
+        
+
+        Client client = new Client(400.935, logProviderEnum: RabbitSender.Models.LogModels.LogProviderEnum.None);
+        IList<BaseOperationResult> results = client.SendTransactionalParallelism(servers.Select(p => new SendModel() { MessageProcessorName = "Query", Properties = keyValuePairs, ReceiverName = p.Server, ReceiverVahedeTejariSn = p.VahedetejariSn }).ToArray());
+        IReadOnlyList<ServerReportExecutionResult> res = results.Select(p => new ServerReportExecutionResult(new VahedTejari()
+        {
+            Server = p.ReceiverName,
+            VahedetejariDs = p.ReceiverName,
+            VahedetejariSn = p.ReceiverVahedeTejariSN
+        }, JsonHelper.Deserialize<DataTable>(p.JsonData))).ToList().AsReadOnly();
+        await Task.CompletedTask;
+        return res;
+
+    }
 }

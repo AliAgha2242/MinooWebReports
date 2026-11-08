@@ -23,9 +23,8 @@ public sealed class CompanyAppLocationService(
         INNER JOIN paVahedeTejari
             ON paVahedeTejari.CompanyID = Company.CompanyID
         WHERE LocUser.UsersKeyID = (
-            SELECT UsersKeyID FROM Users WHERE UserCode = @UserCode
-        )
-          AND ApplicationID = '5';
+            SELECT top 1 UsersKeyID FROM Users WHERE UserId = @UserCode
+        );
         """;
 
     public async Task<IReadOnlyList<VahedTejari>> GetAllLocationAsync(

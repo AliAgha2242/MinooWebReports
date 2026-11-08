@@ -19,7 +19,7 @@ public sealed class AuthenticateService(IConfiguration configuration) : IAuthent
     private const string UserSql = """
         SELECT TOP (1) UserId, UserName, UserPassword, UserCode
         FROM dbo.Users
-        WHERE UserCode = @UserCode;
+        WHERE UserId = @UserCode;
         """;
 
     public async Task<AuthenticatedUser?> ValidateCredentialsAsync(

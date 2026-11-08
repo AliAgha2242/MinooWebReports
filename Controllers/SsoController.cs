@@ -43,40 +43,46 @@ public sealed class SsoController(
                 Content = JsonContent.Create(new SsoTicketRedeemRequest(ticket))
             };
             request.Headers.TryAddWithoutValidation("X-Reports-Client-Secret", clientSecret);
-            using var response = await httpClientFactory.CreateClient("MinooWebCore")
+
+            using (var client = httpClientFactory.CreateClient("MinooWebCore"))
+            {
+                client.Timeout = TimeSpan.FromMinutes(20);
+
+                using var response = await client
                 .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-                return Unauthorized();
+                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                    return Unauthorized();
 
-            if (!response.IsSuccessStatusCode)
-            {
-                logger.LogWarning("Parent SSO returned {StatusCode}; showing the local Reports login.",
-                    (int)response.StatusCode);
-                return RedirectToAction("Login", "Account");
-            }
+                if (!response.IsSuccessStatusCode)
+                {
+                    logger.LogWarning("Parent SSO returned {StatusCode}; showing the local Reports login.",
+                        (int)response.StatusCode);
+                    return RedirectToAction("Login", "Account");
+                }
 
-            var user = await response.Content.ReadFromJsonAsync<SsoUserResponse>(cancellationToken: cancellationToken);
-            if (user is null || string.IsNullOrWhiteSpace(user.UserId) ||
-                string.IsNullOrWhiteSpace(user.UserCode) || string.IsNullOrWhiteSpace(user.UserName))
-                return Unauthorized();
+                var user = await response.Content.ReadFromJsonAsync<SsoUserResponse>(cancellationToken: cancellationToken);
+                if (user is null || string.IsNullOrWhiteSpace(user.UserId) ||
+                    string.IsNullOrWhiteSpace(user.UserCode) || string.IsNullOrWhiteSpace(user.UserName))
+                    return Unauthorized();
 
-            var claims = new[]
-            {
+                var claims = new[]
+                {
                 new Claim(ClaimTypes.NameIdentifier, user.UserId),
                 new Claim(ClaimTypes.Name, user.UserName),
                 new Claim("UserCode", user.UserCode),
                 new Claim(ClaimTypes.Role, "User")
             };
-            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            await HttpContext.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme,
-                new ClaimsPrincipal(identity),
-                new AuthenticationProperties
-                {
-                    IsPersistent = false,
-                    AllowRefresh = true,
-                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
-                });
+                var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                await HttpContext.SignInAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme,
+                    new ClaimsPrincipal(identity),
+                    new AuthenticationProperties
+                    {
+                        IsPersistent = false,
+                        AllowRefresh = true,
+                        ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
+                    });
+            }
 
             return RedirectToAction("Index", "Home");
         }
