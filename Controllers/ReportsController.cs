@@ -60,7 +60,7 @@ public sealed class ReportsController(
         string? optionsError = null;
         try
         {
-            await LoadParameterOptionsAsync(report, connection, cancellationToken);
+            await LoadParameterOptionsAsync(report, executionConnections, cancellationToken);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -233,15 +233,59 @@ public sealed class ReportsController(
 
     private async Task LoadParameterOptionsAsync(
         ReportDefinition report,
-        VahedTejari connection,
+        IReadOnlyList<VahedTejari> connections,
         CancellationToken cancellationToken)
     {
+        if (connections.Count == 0)
+            throw new InvalidOperationException("برای دریافت گزینه‌های پارامتر، سروری انتخاب نشده است.");
+
         foreach (var parameter in report.Parameters.Where(parameter =>
                      parameter.Type is "RadioButton" or "ListBox" or "ComboBox"))
         {
-            parameter.Options = await execution.LoadParameterOptionsJsonAsync(
-                parameter, connection, cancellationToken);
+            // Static options are identical for every server. Dynamic option queries,
+            // however, must run on every selected server so the user can choose values
+            // that exist outside the first server as well.
+            if (string.IsNullOrWhiteSpace(parameter.DataSource))
+            {
+                parameter.Options = await execution.LoadParameterOptionsJsonAsync(
+                    parameter, connections[0], cancellationToken);
+                continue;
+            }
+
+            var optionResults = await Task.WhenAll(connections.Select(connection =>
+                execution.LoadParameterOptionsJsonAsync(parameter, connection, cancellationToken)));
+
+            parameter.Options = MergeParameterOptions(optionResults);
         }
+    }
+
+    private static string MergeParameterOptions(IEnumerable<string?> optionJsonResults)
+    {
+        var merged = new List<System.Text.Json.JsonElement>();
+        var seenValues = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var json in optionJsonResults)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+                continue;
+
+            using var document = JsonDocument.Parse(json);
+            if (document.RootElement.ValueKind != JsonValueKind.Array)
+                throw new InvalidOperationException("ساختار گزینه‌های پارامتر معتبر نیست.");
+
+            foreach (var option in document.RootElement.EnumerateArray())
+            {
+                var key = option.ValueKind == System.Text.Json.JsonValueKind.Object &&
+                          option.TryGetProperty("value", out var valueElement)
+                    ? valueElement.ToString()
+                    : option.ToString();
+
+                if (seenValues.Add(key))
+                    merged.Add(option.Clone());
+            }
+        }
+
+        return JsonSerializer.Serialize(merged);
     }
 
     [HttpPost]
@@ -499,7 +543,7 @@ public sealed class ReportsController(
 
             try
             {
-                await LoadParameterOptionsAsync(report, connection, cancellationToken);
+                await LoadParameterOptionsAsync(report, executionConnections, cancellationToken);
             }
             catch (Exception optionsException) when (optionsException is not OperationCanceledException)
             {
