@@ -62,9 +62,17 @@
         <section class="reports-active-strip reports-run-connection" aria-label="محل اجرای گزارش">
             <span class="reports-connection-status-dot"></span>
             <strong>محل اجرای گزارش</strong>
-            <span>واحد تجاری: <b>@Model.SelectedConnection.VahedetejariDs</b></span>
-            <span>سرور: <bdi>@Model.SelectedConnection.Server</bdi></span>
-            <span>دیتابیس: <bdi>@Model.SelectedConnection.DataBAset</bdi></span>
+            @if (Model.ExecutionConnections.Count > 1)
+            {
+                <span>تعداد سرورها: <b>@Model.ExecutionConnections.Count</b></span>
+                <span>سرورها: <bdi>@string.Join("، ", Model.ExecutionConnections.Select(item => $"{item.Server} / {item.DataBAset}"))</bdi></span>
+            }
+            else
+            {
+                <span>واحد تجاری: <b>@Model.SelectedConnection.VahedetejariDs</b></span>
+                <span>سرور: <bdi>@Model.SelectedConnection.Server</bdi></span>
+                <span>دیتابیس: <bdi>@Model.SelectedConnection.DataBAset</bdi></span>
+            }
         </section>
         @if (!string.IsNullOrWhiteSpace(Model.Error)) { <div class="report-message report-message-error" role="alert">@Model.Error</div> }
         <section class="report-builder">
@@ -75,9 +83,17 @@
                         <strong>در حال آماده‌سازی گزارش</strong>
                         <p>در حال اتصال به پایگاه داده و پردازش اطلاعات هستیم.</p>
                         <div class="reports-loading-details">
-                            <span>واحد تجاری <b>@Model.SelectedConnection.VahedetejariDs</b></span>
-                            <span>سرور <bdi>@Model.SelectedConnection.Server</bdi></span>
-                            <span>دیتابیس <bdi>@Model.SelectedConnection.DataBAset</bdi></span>
+                            @if (Model.ExecutionConnections.Count > 1)
+                            {
+                                <span>در حال اجرا روی <b>@Model.ExecutionConnections.Count سرور</b></span>
+                                <span>سرورها <bdi>@string.Join("، ", Model.ExecutionConnections.Select(item => item.Server))</bdi></span>
+                            }
+                            else
+                            {
+                                <span>واحد تجاری <b>@Model.SelectedConnection.VahedetejariDs</b></span>
+                                <span>سرور <bdi>@Model.SelectedConnection.Server</bdi></span>
+                                <span>دیتابیس <bdi>@Model.SelectedConnection.DataBAset</bdi></span>
+                            }
                         </div>
                         <small>لطفاً تا نمایش نتیجه، این صفحه را نبندید.</small>
                     </div>
