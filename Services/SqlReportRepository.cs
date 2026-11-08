@@ -50,7 +50,7 @@ public sealed class SqlReportRepository(IConfiguration configuration) : IReportR
     {
         const string sql = """
             SELECT Id, Name, SourceType, SqlQuery, ExcelFileName,
-                   NeedsPagination, PageSize,
+                   NeedsPagination, PageSize, UseDefaultServer,
                    CASE WHEN SourceType = 'Excel' THEN ExcelContent ELSE NULL END AS ExcelContent
             FROM dbo.ReportDefinitions
             WHERE Id = @Id AND IsDeleted = 0;
@@ -75,7 +75,8 @@ public sealed class SqlReportRepository(IConfiguration configuration) : IReportR
                     ExcelFileName = reader.IsDBNull(4) ? null : reader.GetString(4),
                     NeedsPagination = reader.GetBoolean(5),
                     PageSize = reader.IsDBNull(6) ? 25 : reader.GetInt32(6),
-                    ExcelContent = reader.IsDBNull(7) ? null : reader.GetValue(7) switch
+                    UseDefaultServer = reader.GetBoolean(7),
+                    ExcelContent = reader.IsDBNull(8) ? null : reader.GetValue(8) switch
                     {
                         byte[] bytes => bytes,
                         string base64 => Convert.FromBase64String(base64),
@@ -87,6 +88,22 @@ public sealed class SqlReportRepository(IConfiguration configuration) : IReportR
 
         if (report is null)
             return null;
+
+        const string serverSql = """
+            SELECT VahedeTejariSN
+            FROM dbo.ReportDefinitionServers
+            WHERE ReportDefinitionId = @ReportDefinitionId
+            ORDER BY VahedeTejariSN;
+            """;
+        await using (var serverCommand = new SqlCommand(serverSql, connection) { CommandTimeout = 15 })
+        {
+            serverCommand.Parameters.Add("@ReportDefinitionId", System.Data.SqlDbType.Int).Value = id;
+            await using var serverReader = await serverCommand.ExecuteReaderAsync(cancellationToken);
+            var serverIds = new List<decimal>();
+            while (await serverReader.ReadAsync(cancellationToken))
+                serverIds.Add(serverReader.GetDecimal(0));
+            report.ServerVahedeTejariSNs = serverIds;
+        }
 
         const string parameterSql = """
             SELECT Id, ReportDefinitionId, Name, DisplayName, Type,
