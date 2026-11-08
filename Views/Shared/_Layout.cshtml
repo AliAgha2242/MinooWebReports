@@ -12,6 +12,16 @@
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <form method="post" action="/Account/Logout" class="global-logout-form">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="global-logout-button" title="خروج از حساب کاربری">
+                <span aria-hidden="true">↪</span>
+                <span>خروج</span>
+            </button>
+        </form>
+    }
     @RenderBody()
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
