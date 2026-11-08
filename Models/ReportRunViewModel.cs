@@ -6,6 +6,7 @@ public sealed class ReportRunViewModel
 {
     public ReportDefinition Report { get; set; } = new();
     public VahedTejari SelectedConnection { get; set; } = new();
+    public IReadOnlyList<VahedTejari> ExecutionConnections { get; set; } = [];
     public Dictionary<string, string?> Values { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public DataTable? Result { get; set; }
     public int Page { get; set; } = 1;
