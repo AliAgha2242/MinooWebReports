@@ -147,8 +147,17 @@ Before a multi-server run, Reports checks the current user's access to all confi
 
 Apply Database/Migrations/20261108_AddMultiServerReportTargets.sql to the database containing dbo.ReportDefinitions before deploying. If MinooWebCore and MinooWebReports point to the same metadata database, run the script only once. Existing single-server selections are migrated into ReportDefinitionServers.
 
-### Multi-server query service handoff
+### Multi-server Rabbit query contract
 
-The actual per-server SQL execution is intentionally left for the application owner. Implement IMultiServerReportQueryService in Services/IMultiServerReportQueryService.cs. It receives the report, parameter values and authorized server list, and returns one ServerReportExecutionResult per requested server, each containing its server identity and a DataTable.
+Multi-server SQL reports are sent through RabbitSender by NotConfiguredMultiServerReportQueryService. The Rabbit message keeps the existing `querytext` property and now also sends:
 
-The current NotConfiguredMultiServerReportQueryService is a registered placeholder that throws a clear error when a multi-server report is run. Replace its registration in Program.cs with your implementation when ready. Default-server reports continue to use the existing IReportExecutionService and are unaffected.
+- `parameters`: a dictionary of report parameter names to submitted values (or null).
+- `parameterTypes`: a dictionary of parameter names to their configured UI types.
+
+The SQL text is sent unchanged. The Rabbit receiver must bind values from `parameters` to `SqlParameter` instances; it must never inject values into SQL by string replacement. The `parameterTypes` map lets the receiver convert Number, Date, Time, DateTime and Checkbox values and handle ListBox's comma-separated numeric values explicitly. The receiver must continue returning a JSON-serialized DataTable in each successful Rabbit result.
+
+The producer validates the report's read-only SELECT query and parameter values before sending. It also rejects missing, duplicate, unexpected, empty or non-deserializable server responses rather than merging incomplete results. The RabbitSender API currently used by the project exposes a synchronous `SendTransactionalParallelism` call, which is offloaded from the ASP.NET request thread; cancellation cannot interrupt a call already running inside that synchronous library method.
+
+Dynamic ListBox/ComboBox option queries are executed against every selected server and their options are merged by value (the first label for a duplicate value is retained). Static options are loaded once.
+
+**Receiver-side change required:** if the current Rabbit receiver only reads `querytext`, it will ignore the new parameter dictionaries. Update that receiver to bind `parameters` and `parameterTypes` safely before relying on parameterized multi-server reports. Default-server reports continue to use the existing local `IReportExecutionService`.
