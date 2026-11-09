@@ -62,7 +62,7 @@
                 {
                     <span class="reports-group-chip" draggable="true" data-group-chip data-column="@column" data-column-label="@DisplayColumn(column)">
                         <span class="reports-drag-handle">⠿</span><b>@DisplayColumn(column)</b>
-                        <button type="button" data-remove-group aria-label="حذف گروه @column">×</button>
+                        <button type="button" data-remove-group aria-label="حذف گروه @DisplayColumn(column)">×</button>
                         <input type="hidden" name="groupColumns" value="@column" />
                     </span>
                 }
@@ -115,7 +115,7 @@
                     {
                         <span class="reports-active-grouping-level reports-active-grouping-level-@groupIndex">
                             <small>سطح @(groupIndex + 1)</small>
-                            <bdi>@Model.GroupColumns[groupIndex]</bdi>
+                            <bdi>@DisplayColumn(Model.GroupColumns[groupIndex])</bdi>
                         </span>
                         @if (groupIndex < Model.GroupColumns.Count - 1)
                         {
