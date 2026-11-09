@@ -31,14 +31,16 @@
             </p>
         </div>
         <div class="reports-result-header-actions">
-            <button type="button" class="reports-fullscreen-button" data-report-fullscreen aria-pressed="false">
-                <span aria-hidden="true">⛶</span><span data-fullscreen-label>تمام‌صفحه</span>
-            </button>
             <a class="reports-back-link" asp-action="Run" asp-route-id="@Model.Report.Id">بازگشت به پارامترها</a>
         </div>
     </header>
 
     <form asp-action="Run" method="post" class="reports-result-workspace" data-report-grid-form>
+        <div class="reports-workspace-toolbar">
+            <button type="button" class="reports-fullscreen-button" data-report-fullscreen aria-pressed="false">
+                <span aria-hidden="true">⛶</span><span data-fullscreen-label>تمام‌صفحه</span>
+            </button>
+        </div>
         @Html.AntiForgeryToken()
         <input type="hidden" name="id" value="@Model.Report.Id" />
         <input type="hidden" name="hiddenColumnsSubmitted" value="true" />
@@ -289,13 +291,13 @@
 @section Scripts {
     <script>
         (() => {
-            const page = document.querySelector(".reports-result-page");
+            const workspace = document.querySelector(".reports-result-workspace");
             const button = document.querySelector("[data-report-fullscreen]");
             const label = document.querySelector("[data-fullscreen-label]");
-            if (!page || !button) return;
+            if (!workspace || !button) return;
 
             const syncState = () => {
-                const active = document.fullscreenElement === page;
+                const active = document.fullscreenElement === workspace;
                 button.setAttribute("aria-pressed", active.toString());
                 if (label) label.textContent = active ? "خروج از تمام‌صفحه" : "تمام‌صفحه";
                 button.classList.toggle("is-active", active);
@@ -303,10 +305,10 @@
 
             button.addEventListener("click", async () => {
                 try {
-                    if (document.fullscreenElement === page) {
+                    if (document.fullscreenElement === workspace) {
                         await document.exitFullscreen();
                     } else if (!document.fullscreenElement) {
-                        await page.requestFullscreen();
+                        await workspace.requestFullscreen();
                     }
                 } catch (error) {
                     console.error("Fullscreen mode could not be changed.", error);
