@@ -464,6 +464,7 @@
 
 
     // Per-user report grid preferences, drag-and-drop grouping and column resizing.
+    const initializeReportGrid = () => {
     const reportGrid = document.querySelector("[data-report-grid]");
     if (reportGrid) {
         const reportForm = reportGrid.querySelector("[data-report-grid-form]");
@@ -761,6 +762,9 @@
         // Ensure the first submission also sends the initial Redis/browser state.
         if (widthsInput) widthsInput.value = JSON.stringify(columnWidths);
         if (themeInput) themeInput.value = reportGrid.dataset.gridTheme;
-    }
+    };
+
+    initializeReportGrid();
+    document.addEventListener("report-grid-updated", initializeReportGrid);
 
 })();
