@@ -572,3 +572,40 @@
  .reports-result-page:fullscreen { padding:10px; }
  .reports-result-page:fullscreen .reports-result-table-wrap { min-height:calc(100vh - 160px); }
 }
+
+
+/* Fullscreen is limited to the report workspace; the page itself never scrolls in this mode. */
+.reports-workspace-toolbar { display:flex; justify-content:flex-end; margin-bottom:12px; }
+.reports-result-workspace:fullscreen {
+    box-sizing:border-box;
+    display:flex;
+    flex-direction:column;
+    gap:0;
+    width:100vw;
+    height:100vh;
+    height:100dvh;
+    max-height:100vh;
+    max-height:100dvh;
+    margin:0;
+    padding:16px 20px;
+    overflow:hidden;
+    border:0;
+    border-radius:0;
+    background:var(--grid-bg,#071625);
+}
+.reports-result-workspace:fullscreen .reports-workspace-toolbar { flex:0 0 auto; }
+.reports-result-workspace:fullscreen .reports-grouping-panel,
+.reports-result-workspace:fullscreen .reports-grid-controls,
+.reports-result-workspace:fullscreen .reports-active-grouping,
+.reports-result-workspace:fullscreen .reports-pagination { flex-shrink:0; }
+.reports-result-workspace:fullscreen .reports-result-table-wrap {
+    flex:1 1 auto;
+    min-height:0;
+    max-height:none;
+    overflow:auto;
+}
+.reports-result-workspace:fullscreen .reports-data-table thead { position:sticky; top:0; z-index:3; }
+body:has(.reports-result-workspace:fullscreen) { overflow:hidden; }
+@media(max-width:700px) {
+    .reports-result-workspace:fullscreen { padding:10px; }
+}
