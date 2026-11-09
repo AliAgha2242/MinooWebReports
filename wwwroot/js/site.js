@@ -541,7 +541,9 @@
                 handle.className = "reports-drag-handle";
                 handle.textContent = "⠿";
                 const label = document.createElement("b");
-                label.textContent = column;
+                const source = Array.from(palette?.querySelectorAll("[data-group-source]") || [])
+                    .find(item => item.dataset.column === column);
+                label.textContent = source?.dataset.columnLabel || column;
                 const remove = document.createElement("button");
                 remove.type = "button";
                 remove.dataset.removeGroup = "";
