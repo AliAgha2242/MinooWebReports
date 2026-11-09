@@ -5,6 +5,10 @@
     var pagerStart = Math.Max(1, Model.Page - 2);
     var pagerEnd = Math.Min(Model.TotalPages, pagerStart + 4);
     pagerStart = Math.Max(1, pagerEnd - 4);
+    string DisplayColumn(string column) =>
+        Model.ColumnDisplayNames.TryGetValue(column, out var displayName) && !string.IsNullOrWhiteSpace(displayName)
+            ? displayName
+            : column;
 }
 @functions {
     private static string DisplayCell(System.Data.DataRow row, string column) =>
@@ -56,8 +60,8 @@
                 <span class="reports-group-placeholder" data-group-placeholder>ستون‌ها را از فهرست زیر به این قسمت بکشید</span>
                 @foreach (var column in Model.GroupColumns)
                 {
-                    <span class="reports-group-chip" draggable="true" data-group-chip data-column="@column">
-                        <span class="reports-drag-handle">⠿</span><b>@column</b>
+                    <span class="reports-group-chip" draggable="true" data-group-chip data-column="@column" data-column-label="@DisplayColumn(column)">
+                        <span class="reports-drag-handle">⠿</span><b>@DisplayColumn(column)</b>
                         <button type="button" data-remove-group aria-label="حذف گروه @column">×</button>
                         <input type="hidden" name="groupColumns" value="@column" />
                     </span>
@@ -66,7 +70,7 @@
             <div class="reports-group-palette" data-group-palette>
                 @foreach (var column in Model.AllColumns.Where(column => !Model.GroupColumns.Contains(column, StringComparer.OrdinalIgnoreCase)))
                 {
-                    <button type="button" class="reports-group-source" draggable="true" data-group-source data-column="@column">@column <span>⠿</span></button>
+                    <button type="button" class="reports-group-source" draggable="true" data-group-source data-column="@column" data-column-label="@DisplayColumn(column)">@DisplayColumn(column) <span>⠿</span></button>
                 }
             </div>
             </div>
@@ -88,7 +92,7 @@
                 <div class="reports-column-picker-list">
                     @foreach (var column in Model.AllColumns)
                     {
-                        <label><input type="checkbox" name="hiddenColumns" value="@column" checked="@Model.HiddenColumns.Contains(column, StringComparer.OrdinalIgnoreCase)" /> @column</label>
+                        <label><input type="checkbox" name="hiddenColumns" value="@column" checked="@Model.HiddenColumns.Contains(column, StringComparer.OrdinalIgnoreCase)" /> @DisplayColumn(column)</label>
                     }
                 </div>
             </details>
@@ -131,10 +135,10 @@
                             var width = Model.ColumnWidths.TryGetValue(column, out var savedWidth) ? savedWidth : 160;
                             <th data-column-header="@column" style="width:@(width)px;min-width:90px">
                                 <div class="reports-th-title">
-                                    <span class="reports-th-label">@column</span>
-                                    <span class="reports-sort-arrows" role="group" aria-label="مرتب‌سازی @column">
-                                        <button type="button" class="reports-sort-arrow @(Model.SortColumn == column && !Model.SortDescending ? "is-active" : "")" data-sort-column="@column" data-sort-direction="asc" aria-label="مرتب‌سازی صعودی @column" aria-pressed="@(Model.SortColumn == column && !Model.SortDescending ? "true" : "false")">↑</button>
-                                        <button type="button" class="reports-sort-arrow @(Model.SortColumn == column && Model.SortDescending ? "is-active" : "")" data-sort-column="@column" data-sort-direction="desc" aria-label="مرتب‌سازی نزولی @column" aria-pressed="@(Model.SortColumn == column && Model.SortDescending ? "true" : "false")">↓</button>
+                                    <span class="reports-th-label">@DisplayColumn(column)</span>
+                                    <span class="reports-sort-arrows" role="group" aria-label="مرتب‌سازی @DisplayColumn(column)">
+                                        <button type="button" class="reports-sort-arrow @(Model.SortColumn == column && !Model.SortDescending ? "is-active" : "")" data-sort-column="@column" data-sort-direction="asc" aria-label="مرتب‌سازی صعودی @DisplayColumn(column)" aria-pressed="@(Model.SortColumn == column && !Model.SortDescending ? "true" : "false")">↑</button>
+                                        <button type="button" class="reports-sort-arrow @(Model.SortColumn == column && Model.SortDescending ? "is-active" : "")" data-sort-column="@column" data-sort-direction="desc" aria-label="مرتب‌سازی نزولی @DisplayColumn(column)" aria-pressed="@(Model.SortColumn == column && Model.SortDescending ? "true" : "false")">↓</button>
                                     </span>
                                     <span class="reports-resize-handle" data-column-resizer aria-hidden="true"></span>
                                 </div>
@@ -145,7 +149,7 @@
                         @foreach (var column in visibleColumns)
                         {
                             <th>
-                                <input class="reports-column-filter" name="filters[@column]" value="@(Model.Filters.TryGetValue(column, out var filter) ? filter : "")" placeholder="فیلتر @column" aria-label="فیلتر ستون @column" />
+                                <input class="reports-column-filter" name="filters[@column]" value="@(Model.Filters.TryGetValue(column, out var filter) ? filter : "")" placeholder="فیلتر @DisplayColumn(column)" aria-label="فیلتر ستون @DisplayColumn(column)" />
                             </th>
                         }
                     </tr>
@@ -181,7 +185,7 @@
                                     <td colspan="@Math.Max(1, visibleColumns.Count - indentCount)">
                                         <div class="reports-group-row-content">
                                             <span class="reports-group-level-badge">سطح @(level + 1)</span>
-                                            <span class="reports-group-column">@groupColumn</span>
+                                            <span class="reports-group-column">@DisplayColumn(groupColumn)</span>
                                             <span class="reports-group-equals">=</span>
                                             <strong class="reports-group-value">@DisplayCell(row, groupColumn)</strong>
                                         </div>
