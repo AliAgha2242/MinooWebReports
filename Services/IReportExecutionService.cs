@@ -15,4 +15,8 @@ public interface IReportExecutionService
         ReportParameter parameter,
         VahedTejari connection,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyDictionary<string, string>> LoadColumnDisplayNamesAsync(
+        VahedTejari connection,
+        CancellationToken cancellationToken = default);
 }
