@@ -45,10 +45,6 @@ public sealed class DailyFileLoggerProvider : ILoggerProvider, ISupportExternalS
             .Append(FormatState(state, formatter, exception))
             .ToString();
 
-        _scopeProvider.ForEachScope(
-            static (scope, builder) => builder.Append(" => Scope: ").Append(scope),
-            new StringBuilder());
-
         var scopeText = new StringBuilder();
         _scopeProvider.ForEachScope(
             static (scope, builder) => builder.Append(" => Scope: ").Append(scope),
