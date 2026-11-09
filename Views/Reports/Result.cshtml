@@ -317,6 +317,50 @@
 
             document.addEventListener("fullscreenchange", syncState);
             syncState();
+
+            // Keep the same fullscreen form element alive while the server recalculates
+            // sorting, grouping, filters or pagination.
+            workspace.addEventListener("submit", async event => {
+                event.preventDefault();
+                const submitter = event.submitter;
+                const groupingPanel = workspace.querySelector(".reports-grouping-panel");
+                const groupingWasOpen = groupingPanel?.open ?? false;
+                const tableWrap = workspace.querySelector(".reports-result-table-wrap");
+                const previousScrollTop = tableWrap?.scrollTop ?? 0;
+
+                try {
+                    const formData = new FormData(workspace, submitter);
+                    const response = await fetch(workspace.action, {
+                        method: "POST",
+                        body: formData,
+                        headers: { "X-Requested-With": "XMLHttpRequest" },
+                        credentials: "same-origin"
+                    });
+                    if (!response.ok) throw new Error("گرفتن نتیجه جدید گزارش ناموفق بود.");
+
+                    const html = await response.text();
+                    const parsed = new DOMParser().parseFromString(html, "text/html");
+                    const updatedWorkspace = parsed.querySelector("[data-report-grid-form]");
+                    if (!updatedWorkspace) throw new Error("ساختار پاسخ سرور معتبر نیست.");
+
+                    workspace.innerHTML = updatedWorkspace.innerHTML;
+                    const updatedGrid = parsed.querySelector("[data-report-grid]");
+                    const currentGrid = document.querySelector("[data-report-grid]");
+                    if (updatedGrid && currentGrid)
+                        currentGrid.dataset.gridTheme = updatedGrid.dataset.gridTheme || "midnight";
+
+                    const newGroupingPanel = workspace.querySelector(".reports-grouping-panel");
+                    if (newGroupingPanel) newGroupingPanel.open = groupingWasOpen;
+                    const newTableWrap = workspace.querySelector(".reports-result-table-wrap");
+                    if (newTableWrap) newTableWrap.scrollTop = previousScrollTop;
+
+                    document.dispatchEvent(new CustomEvent("report-grid-updated"));
+                    syncState();
+                } catch (error) {
+                    console.error("Report grid update failed.", error);
+                    window.alert("به‌روزرسانی گزارش انجام نشد. لطفاً دوباره تلاش کنید.");
+                }
+            });
         })();
     </script>
 }
