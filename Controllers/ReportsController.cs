@@ -196,6 +196,94 @@ public sealed class ReportsController(
         return MergeServerResults(serverResults);
     }
 
+    private async Task<Dictionary<string, string>> LoadColumnDisplayNamesAsync(
+        IReadOnlyList<VahedTejari> connections,
+        CancellationToken cancellationToken)
+    {
+        var mappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var connection in connections)
+        {
+            var cacheKey = $"report-column-labels:{connection.VahedetejariSn}:{connection.DataBAset}";
+            var serverMappings = await reportCache.GetOrCreateAsync(cacheKey, async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30);
+                try
+                {
+                    var loaded = await execution.LoadColumnDisplayNamesAsync(connection, cancellationToken);
+                    return new Dictionary<string, string>(loaded, StringComparer.OrdinalIgnoreCase);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    logger.LogWarning(ex,
+                        "Persian column labels could not be loaded from paObjectHa for server {ServerId}.",
+                        connection.VahedetejariSn);
+                    return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                }
+            });
+
+            foreach (var pair in serverMappings ?? new Dictionary<string, string>())
+                mappings.TryAdd(pair.Key, pair.Value);
+        }
+
+        return mappings;
+    }
+
+    private static (DataTable Table, Dictionary<string, string> NumericSortColumns) CreateSortableTable(
+        DataTable source)
+    {
+        var sortable = source.Copy();
+        var numericSortColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var numberStyles = System.Globalization.NumberStyles.Number |
+                           System.Globalization.NumberStyles.AllowExponent;
+
+        foreach (DataColumn sourceColumn in source.Columns)
+        {
+            if (sourceColumn.DataType != typeof(string) || source.Rows.Count == 0)
+                continue;
+
+            var parsedValues = new decimal?[source.Rows.Count];
+            var hasNumericValue = false;
+            var isNumericColumn = true;
+
+            for (var rowIndex = 0; rowIndex < source.Rows.Count; rowIndex++)
+            {
+                var rawValue = source.Rows[rowIndex][sourceColumn];
+                if (rawValue is DBNull || string.IsNullOrWhiteSpace(Convert.ToString(rawValue)))
+                    continue;
+
+                var textValue = Convert.ToString(rawValue, System.Globalization.CultureInfo.InvariantCulture);
+                if (!decimal.TryParse(textValue, numberStyles,
+                        System.Globalization.CultureInfo.InvariantCulture, out var numericValue))
+                {
+                    isNumericColumn = false;
+                    break;
+                }
+
+                parsedValues[rowIndex] = numericValue;
+                hasNumericValue = true;
+            }
+
+            if (!isNumericColumn || !hasNumericValue)
+                continue;
+
+            var sortColumnName = $"__numeric_sort_{numericSortColumns.Count}";
+            while (sortable.Columns.Contains(sortColumnName))
+                sortColumnName += "_";
+
+            var sortColumn = sortable.Columns.Add(sortColumnName, typeof(decimal));
+            for (var rowIndex = 0; rowIndex < parsedValues.Length; rowIndex++)
+            {
+                if (parsedValues[rowIndex].HasValue)
+                    sortable.Rows[rowIndex][sortColumn] = parsedValues[rowIndex]!.Value;
+            }
+
+            numericSortColumns[sourceColumn.ColumnName] = sortColumnName;
+        }
+
+        return (sortable, numericSortColumns);
+    }
+
     private static DataTable MergeServerResults(
         IReadOnlyList<ServerReportExecutionResult> serverResults)
     {
@@ -418,6 +506,7 @@ public sealed class ReportsController(
                 raw = await ExecuteReportDataAsync(report, values, executionConnections, cancellationToken);
                 reportCache.Set(cacheKey, raw, TimeSpan.FromSeconds(45));
             }
+            var columnDisplayNames = await LoadColumnDisplayNamesAsync(executionConnections, cancellationToken);
             var validColumns = raw.Columns.Cast<DataColumn>()
                 .Select(column => column.ColumnName).ToArray();
 
@@ -438,7 +527,8 @@ public sealed class ReportsController(
 
             // Filter and sort through DataView indexes instead of cloning the full DataTable
             // multiple times. This keeps only the requested page in a second DataTable.
-            var dataView = new DataView(raw);
+            var sortable = CreateSortableTable(raw);
+            var dataView = new DataView(sortable.Table);
             var filterTerms = filters
                 .Where(filter => !string.IsNullOrWhiteSpace(filter.Value))
                 .Select(filter =>
@@ -464,7 +554,10 @@ public sealed class ReportsController(
                 var safeGroupColumn = groupColumn.Replace("]", "]]", StringComparison.Ordinal);
                 var isActiveSortColumn = string.Equals(groupColumn, sortColumn, StringComparison.OrdinalIgnoreCase);
                 var groupDirection = isActiveSortColumn && sortDescending ? "DESC" : "ASC";
-                sortTerms.Add($"[{safeGroupColumn}] {groupDirection}");
+                var groupSortExpression = sortable.NumericSortColumns.TryGetValue(groupColumn, out var numericGroupColumn)
+                    ? $"[{numericGroupColumn}]"
+                    : $"[{safeGroupColumn}]";
+                sortTerms.Add($"{groupSortExpression} {groupDirection}");
             }
 
             if (!string.IsNullOrWhiteSpace(sortColumn) &&
@@ -474,7 +567,10 @@ public sealed class ReportsController(
             {
                 var safeColumn = sortColumn.Replace("]", "]]", StringComparison.Ordinal);
                 var direction = sortDescending ? "DESC" : "ASC";
-                sortTerms.Add($"[{safeColumn}] {direction}");
+                var sortExpression = sortable.NumericSortColumns.TryGetValue(sortColumn, out var numericSortColumn)
+                    ? $"[{numericSortColumn}]"
+                    : $"[{safeColumn}]";
+                sortTerms.Add($"{sortExpression} {direction}");
             }
 
             if (sortTerms.Count > 0)
@@ -493,7 +589,10 @@ public sealed class ReportsController(
             var firstRowIndex = (page - 1) * actualPageSize;
             var lastRowIndex = Math.Min(firstRowIndex + actualPageSize, totalRows);
             for (var rowIndex = firstRowIndex; rowIndex < lastRowIndex; rowIndex++)
-                paged.ImportRow(dataView[rowIndex].Row);
+            {
+                var sourceRowIndex = sortable.Table.Rows.IndexOf(dataView[rowIndex].Row);
+                paged.ImportRow(raw.Rows[sourceRowIndex]);
+            }
 
             var hidden = (hiddenColumnsSubmitted ? hiddenColumns ?? [] : preferences.HiddenColumns)
                 .Where(column => validColumns.Contains(column, StringComparer.OrdinalIgnoreCase))
@@ -522,6 +621,7 @@ public sealed class ReportsController(
                 Filters = filters,
                 Result = paged,
                 AllColumns = validColumns,
+                ColumnDisplayNames = columnDisplayNames,
                 HiddenColumns = hidden,
                 GroupColumns = groupColumns,
                 ColumnWidths = columnWidths,
