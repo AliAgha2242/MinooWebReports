@@ -41,6 +41,42 @@ public sealed class SqlReportExecutionService(
         throw new InvalidOperationException("نوع منبع گزارش پشتیبانی نمی‌شود.");
     }
 
+    public async Task<IReadOnlyDictionary<string, string>> LoadColumnDisplayNamesAsync(
+        VahedTejari connection,
+        CancellationToken cancellationToken = default)
+    {
+        var builder = new SqlConnectionStringBuilder(connectionStringFactory.Create(connection))
+        {
+            ApplicationIntent = ApplicationIntent.ReadOnly,
+            ConnectTimeout = 15
+        };
+
+        await using var sqlConnection = new SqlConnection(builder.ConnectionString);
+        await sqlConnection.OpenAsync(cancellationToken);
+        await using var command = new SqlCommand(
+            "select ObjectHaDs,ObjectHaFDs from paObjectHa", sqlConnection)
+        {
+            CommandTimeout = 15,
+            CommandType = CommandType.Text
+        };
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+        var mappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            if (await reader.IsDBNullAsync(0, cancellationToken) ||
+                await reader.IsDBNullAsync(1, cancellationToken))
+                continue;
+
+            var sourceName = Convert.ToString(reader.GetValue(0), System.Globalization.CultureInfo.InvariantCulture)?.Trim();
+            var displayName = Convert.ToString(reader.GetValue(1), System.Globalization.CultureInfo.CurrentCulture)?.Trim();
+            if (!string.IsNullOrWhiteSpace(sourceName) && !string.IsNullOrWhiteSpace(displayName))
+                mappings.TryAdd(sourceName, displayName);
+        }
+
+        return mappings;
+    }
+
     public async Task<string?> LoadParameterOptionsJsonAsync(
         ReportParameter parameter,
         VahedTejari connection,
