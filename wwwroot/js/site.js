@@ -755,7 +755,12 @@
             reportForm.requestSubmit();
         });
 
-        reportForm?.addEventListener("submit", persistPreferences);
+        if (reportForm) {
+            if (reportForm._reportGridPersistHandler)
+                reportForm.removeEventListener("submit", reportForm._reportGridPersistHandler);
+            reportForm._reportGridPersistHandler = persistPreferences;
+            reportForm.addEventListener("submit", persistPreferences);
+        }
         reportForm?.querySelectorAll('input[name^="filters["], input[name="hiddenColumns"], select[name="pageSize"]')
             .forEach(input => input.addEventListener("change", persistPreferences));
 
