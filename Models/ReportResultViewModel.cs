@@ -11,6 +11,7 @@ public sealed class ReportResultViewModel
     public Dictionary<string, string?> Filters { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public DataTable Result { get; set; } = new();
     public IReadOnlyList<string> AllColumns { get; set; } = [];
+    public Dictionary<string, string> ColumnDisplayNames { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public List<string> HiddenColumns { get; set; } = [];
     public List<string> GroupColumns { get; set; } = [];
     public Dictionary<string, int> ColumnWidths { get; set; } = new(StringComparer.OrdinalIgnoreCase);
