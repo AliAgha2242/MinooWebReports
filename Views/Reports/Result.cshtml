@@ -292,18 +292,25 @@
     <script>
         (() => {
             const workspace = document.querySelector(".reports-result-workspace");
-            const button = document.querySelector("[data-report-fullscreen]");
-            const label = document.querySelector("[data-fullscreen-label]");
-            if (!workspace || !button) return;
+            if (!workspace) return;
 
             const syncState = () => {
                 const active = document.fullscreenElement === workspace;
-                button.setAttribute("aria-pressed", active.toString());
+                const button = workspace.querySelector("[data-report-fullscreen]");
+                const label = workspace.querySelector("[data-fullscreen-label]");
+                if (button) {
+                    button.setAttribute("aria-pressed", active.toString());
+                    button.classList.toggle("is-active", active);
+                }
                 if (label) label.textContent = active ? "خروج از تمام‌صفحه" : "تمام‌صفحه";
-                button.classList.toggle("is-active", active);
             };
 
-            button.addEventListener("click", async () => {
+            // Delegate the click from the persistent fullscreen element. Its inner
+            // toolbar is replaced after AJAX requests, so the button itself is not stable.
+            workspace.addEventListener("click", async event => {
+                const button = event.target.closest("[data-report-fullscreen]");
+                if (!button || !workspace.contains(button)) return;
+
                 try {
                     if (document.fullscreenElement === workspace) {
                         await document.exitFullscreen();
