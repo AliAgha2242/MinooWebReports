@@ -41,7 +41,7 @@ public sealed class DailyFileLoggerProvider : ILoggerProvider, ISupportExternalS
             .Append(now.ToString("O", CultureInfo.InvariantCulture))
             .Append(" [").Append(logLevel).Append(']')
             .Append(" [").Append(category).Append(']')
-            .Append(" [EventId: ").Append(eventId.Id).Append('] ')
+            .Append(" [EventId: ").Append(eventId.Id).Append(']')
             .Append(FormatState(state, formatter, exception))
             .ToString();
 
