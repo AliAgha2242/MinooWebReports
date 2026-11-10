@@ -36,6 +36,10 @@
     </header>
 
     <form asp-action="Run" method="post" class="reports-result-workspace" data-report-grid-form data-grid-theme="@Model.GridTheme">
+        <div class="reports-grid-loading" data-grid-loading role="status" aria-live="polite" aria-hidden="true">
+            <span class="reports-grid-loading-spinner" aria-hidden="true"></span>
+            <span>در حال به‌روزرسانی گزارش...</span>
+        </div>
         <div class="reports-workspace-toolbar">
             <button type="button" class="reports-fullscreen-button" data-report-fullscreen aria-pressed="false">
                 <span aria-hidden="true">⛶</span><span data-fullscreen-label>تمام‌صفحه</span>
@@ -348,6 +352,9 @@
                 const groupingWasOpen = groupingPanel?.open ?? false;
                 const tableWrap = workspace.querySelector(".reports-result-table-wrap");
                 const previousScrollTop = tableWrap?.scrollTop ?? 0;
+                const loadingIndicator = workspace.querySelector("[data-grid-loading]");
+                workspace.classList.add("is-grid-loading");
+                loadingIndicator?.setAttribute("aria-hidden", "false");
 
                 try {
                     const formData = new FormData(workspace, submitter);
@@ -381,6 +388,9 @@
                 } catch (error) {
                     console.error("Report grid update failed.", error);
                     window.alert("به‌روزرسانی گزارش انجام نشد. لطفاً دوباره تلاش کنید.");
+                } finally {
+                    workspace.classList.remove("is-grid-loading");
+                    loadingIndicator?.setAttribute("aria-hidden", "true");
                 }
             });
         })();
