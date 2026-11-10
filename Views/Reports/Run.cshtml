@@ -230,3 +230,22 @@
         <footer class="admin-footer"><span>© @DateTime.Now.Year گروه صنعتی مینو</span><span>MINOO WEB REPORTS</span></footer>
     </section>
 </main>
+
+@section Scripts {
+    <script>
+        (() => {
+            const form = document.querySelector("[data-report-run-form]");
+            if (!form) return;
+
+            // Capture the submit before the shared script starts navigation.
+            // This guarantees the overlay is visible even when the form is submitted
+            // through the normal HTML form pipeline.
+            form.addEventListener("submit", () => {
+                const overlay = form.querySelector("[data-report-loading]");
+                if (!overlay) return;
+                overlay.hidden = false;
+                overlay.removeAttribute("hidden");
+            }, true);
+        })();
+    </script>
+}
