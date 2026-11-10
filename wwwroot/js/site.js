@@ -1,14 +1,34 @@
 (() => {
     document.querySelectorAll("[data-report-run-form]").forEach(form => {
+        let isSubmitting = false;
+
         form.addEventListener("submit", event => {
+            if (isSubmitting) {
+                event.preventDefault();
+                return;
+            }
+
+            // Native validation runs before the submit event. Keep the loader hidden
+            // when the browser has invalid fields and let its validation UI appear.
             if (!form.checkValidity()) return;
+
+            // Delay the real navigation briefly so the browser can paint the overlay.
+            // A normal synchronous form submit can navigate before the loader is rendered.
+            event.preventDefault();
+            isSubmitting = true;
+
             const overlay = form.querySelector("[data-report-loading]");
             const button = form.querySelector("[data-report-run-button]");
+
             if (overlay) overlay.hidden = false;
             if (button) {
                 button.disabled = true;
                 button.innerHTML = '<span class="reports-button-spinner" aria-hidden="true"></span> در حال آماده‌سازی...';
             }
+
+            window.setTimeout(() => {
+                HTMLFormElement.prototype.submit.call(form);
+            }, 80);
         });
     });
 
