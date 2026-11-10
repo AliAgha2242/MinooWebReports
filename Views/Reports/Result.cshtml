@@ -35,7 +35,7 @@
         </div>
     </header>
 
-    <form asp-action="Run" method="post" class="reports-result-workspace" data-report-grid-form>
+    <form asp-action="Run" method="post" class="reports-result-workspace" data-report-grid-form data-grid-theme="@Model.GridTheme">
         <div class="reports-workspace-toolbar">
             <button type="button" class="reports-fullscreen-button" data-report-fullscreen aria-pressed="false">
                 <span aria-hidden="true">⛶</span><span data-fullscreen-label>تمام‌صفحه</span>
@@ -294,6 +294,20 @@
             const workspace = document.querySelector(".reports-result-workspace");
             if (!workspace) return;
 
+            const page = workspace.closest("[data-report-grid]");
+            workspace.addEventListener("change", event => {
+                const picker = event.target.closest("[data-grid-theme-picker]");
+                if (!picker) return;
+
+                const theme = ["midnight", "light", "ocean", "contrast"].includes(picker.value)
+                    ? picker.value
+                    : "midnight";
+                workspace.dataset.gridTheme = theme;
+                if (page) page.dataset.gridTheme = theme;
+                const themeInput = workspace.querySelector("[data-grid-theme-input]");
+                if (themeInput) themeInput.value = theme;
+            });
+
             const syncState = () => {
                 const active = document.fullscreenElement === workspace;
                 const button = workspace.querySelector("[data-report-fullscreen]");
@@ -353,8 +367,9 @@
                     workspace.innerHTML = updatedWorkspace.innerHTML;
                     const updatedGrid = parsed.querySelector("[data-report-grid]");
                     const currentGrid = document.querySelector("[data-report-grid]");
-                    if (updatedGrid && currentGrid)
-                        currentGrid.dataset.gridTheme = updatedGrid.dataset.gridTheme || "midnight";
+                    const updatedTheme = updatedWorkspace.dataset.gridTheme || updatedGrid?.dataset.gridTheme || "midnight";
+                    workspace.dataset.gridTheme = updatedTheme;
+                    if (currentGrid) currentGrid.dataset.gridTheme = updatedTheme;
 
                     const newGroupingPanel = workspace.querySelector(".reports-grouping-panel");
                     if (newGroupingPanel) newGroupingPanel.open = groupingWasOpen;
