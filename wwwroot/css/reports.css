@@ -141,6 +141,34 @@
 .reports-result-workspace[data-grid-theme="contrast"] .reports-grouping-panel,
 .reports-result-workspace[data-grid-theme="contrast"] .reports-pagination,
 .reports-result-workspace[data-grid-theme="contrast"] .reports-result-details { color:var(--grid-text); background:var(--grid-panel); border-color:var(--grid-border); }
+.reports-result-workspace[data-grid-theme] .reports-grouping-panel,
+.reports-result-workspace[data-grid-theme] .reports-pagination,
+.reports-result-workspace[data-grid-theme] .reports-result-details {
+    color:var(--grid-text);
+    background:var(--grid-panel);
+    border-color:var(--grid-border);
+}
+.reports-result-workspace[data-grid-theme] .reports-pagination { color:var(--grid-muted); }
+.reports-result-workspace[data-grid-theme] .reports-pagination-summary > strong { color:var(--grid-text); }
+.reports-result-workspace[data-grid-theme] .reports-pagination .reports-page-button {
+    color:var(--grid-text);
+    background:color-mix(in srgb,var(--grid-accent) 10%,var(--grid-panel));
+    border-color:var(--grid-border);
+}
+.reports-result-workspace[data-grid-theme] .reports-pagination .reports-page-button.is-current {
+    color:var(--grid-bg);
+    background:var(--grid-accent);
+    border-color:var(--grid-accent);
+}
+.reports-result-workspace[data-grid-theme] .reports-result-details-content,
+.reports-result-workspace[data-grid-theme] .reports-parameter-details > div {
+    color:var(--grid-text);
+    border-color:var(--grid-border);
+}
+.reports-result-workspace[data-grid-theme] .reports-parameter-details > div { background:var(--grid-bg); }
+.reports-result-workspace[data-grid-theme] .reports-parameter-details small,
+.reports-result-workspace[data-grid-theme] .reports-parameter-details strong { color:var(--grid-text); }
+
 .reports-result-page .reports-result-workspace { color:var(--grid-text); background:var(--grid-bg); border-color:var(--grid-border); }
 .reports-result-page .reports-grid-toolbar { align-items:center; }
 .reports-result-page .reports-grid-toolbar h2 { margin:6px 0 4px; color:var(--grid-text); font-size:18px; }
