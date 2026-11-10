@@ -59,7 +59,8 @@
 .reports-run-connection b { color:#d9f2f0; font-weight:600; }
 .reports-connection-status-dot { width:7px; height:7px; border-radius:50%; background:#55d6a3; box-shadow:0 0 0 4px rgba(85,214,163,.1); }
 .reports-run-form { position:relative; }
-.reports-loading-overlay[hidden] { display:none; }
+.reports-loading-overlay[hidden] { display:none !important; }
+.reports-loading-overlay:not([hidden]) { display:grid !important; }
 .reports-loading-overlay { position:fixed; inset:0; z-index:10000; display:grid; place-items:center; padding:22px; background:rgba(3,12,23,.78); backdrop-filter:blur(9px); }
 .reports-loading-card { width:min(440px,100%); padding:34px 30px 28px; border:1px solid rgba(93,211,220,.24); border-radius:20px; background:linear-gradient(145deg,#102a40,#091a2c 72%); box-shadow:0 28px 90px rgba(0,0,0,.48),inset 0 1px rgba(255,255,255,.05); text-align:center; animation:reports-loader-enter .25s ease-out; }
 .reports-loading-spinner { display:block; width:62px; height:62px; margin:0 auto 22px; border:4px solid rgba(93,211,220,.16); border-top-color:#5bd1d5; border-left-color:#238bc4; border-radius:50%; animation:reports-loader-spin .85s linear infinite; box-shadow:0 0 26px rgba(50,177,203,.12); }
