@@ -510,6 +510,7 @@
         const applyTheme = value => {
             const theme = allowedThemes.includes(value) ? value : "midnight";
             reportGrid.dataset.gridTheme = theme;
+            if (reportForm) reportForm.dataset.gridTheme = theme;
             if (themePicker) themePicker.value = theme;
             if (themeInput) themeInput.value = theme;
             browserPreferences.theme = theme;
@@ -643,10 +644,16 @@
         else
             renderGroups(currentGroupValues());
 
-        themePicker?.addEventListener("change", () => {
-            applyTheme(themePicker.value);
+        // Delegate theme changes from the stable report root. The form contents are
+        // replaced after AJAX updates, so a direct listener can become detached.
+        if (reportGrid._reportThemeChangeHandler)
+            reportGrid.removeEventListener("change", reportGrid._reportThemeChangeHandler);
+        reportGrid._reportThemeChangeHandler = event => {
+            if (!event.target.matches?.("[data-grid-theme-picker]")) return;
+            applyTheme(event.target.value);
             persistPreferences();
-        });
+        };
+        reportGrid.addEventListener("change", reportGrid._reportThemeChangeHandler);
 
         // Resize from the left edge (RTL layout), with a hard 90px minimum.
         table?.querySelectorAll("[data-column-resizer]").forEach(handle => {
