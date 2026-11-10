@@ -701,11 +701,16 @@
             const chip = event.target.closest("[data-group-chip]");
             if (chip) startGroupDrag(event, chip, false);
         });
-        document.addEventListener("dragend", () => {
+        // Reinitialization follows every AJAX grid refresh. Replace the previous
+        // document-level handler instead of accumulating one closure per refresh.
+        if (reportGrid._reportGridDragEndHandler)
+            document.removeEventListener("dragend", reportGrid._reportGridDragEndHandler);
+        reportGrid._reportGridDragEndHandler = () => {
             reportGrid.querySelectorAll(".is-dragging").forEach(element => element.classList.remove("is-dragging"));
             dropzone?.classList.remove("is-drag-over");
             draggedGroup = null;
-        });
+        };
+        document.addEventListener("dragend", reportGrid._reportGridDragEndHandler);
         dropzone?.addEventListener("dragover", event => {
             if (!draggedGroup) return;
             event.preventDefault();
