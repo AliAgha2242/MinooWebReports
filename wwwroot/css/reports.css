@@ -127,6 +127,20 @@
 .reports-result-page[data-grid-theme="light"] { --grid-bg:#fff; --grid-panel:#eaf1f7; --grid-text:#1d3040; --grid-muted:#5d7182; --grid-border:rgba(39,67,91,.18); --grid-accent:#126d9b; --grid-row-alt:#f3f7fa; --grid-hover:#e4f1f7; }
 .reports-result-page[data-grid-theme="ocean"] { --grid-bg:#082b3a; --grid-panel:#10495b; --grid-text:#e2f7f8; --grid-muted:#a3cbd0; --grid-border:rgba(111,207,211,.22); --grid-accent:#72e0d7; --grid-row-alt:rgba(72,171,181,.09); --grid-hover:rgba(67,190,191,.16); }
 .reports-result-page[data-grid-theme="contrast"] { --grid-bg:#050505; --grid-panel:#171717; --grid-text:#fff; --grid-muted:#e0e0e0; --grid-border:rgba(255,255,255,.42); --grid-accent:#ffed4a; --grid-row-alt:#151515; --grid-hover:#292929; }
+
+/* Keep the selected palette on the report workspace itself as well as its page root.
+   This makes theme variables reliable when the form is refreshed through AJAX. */
+.reports-result-workspace[data-grid-theme="midnight"] { --grid-bg:#0a1d30; --grid-panel:#10283d; --grid-text:#d8e9f3; --grid-muted:#86a4b8; --grid-border:rgba(158,196,222,.16); --grid-accent:#82dce1; --grid-row-alt:rgba(255,255,255,.025); --grid-hover:rgba(49,145,166,.11); }
+.reports-result-workspace[data-grid-theme="light"] { --grid-bg:#fff; --grid-panel:#eaf1f7; --grid-text:#1d3040; --grid-muted:#5d7182; --grid-border:rgba(39,67,91,.18); --grid-accent:#126d9b; --grid-row-alt:#f3f7fa; --grid-hover:#e4f1f7; }
+.reports-result-workspace[data-grid-theme="ocean"] { --grid-bg:#082b3a; --grid-panel:#10495b; --grid-text:#e2f7f8; --grid-muted:#a3cbd0; --grid-border:rgba(111,207,211,.22); --grid-accent:#72e0d7; --grid-row-alt:rgba(72,171,181,.09); --grid-hover:rgba(67,190,191,.16); }
+.reports-result-workspace[data-grid-theme="contrast"] { --grid-bg:#050505; --grid-panel:#171717; --grid-text:#fff; --grid-muted:#e0e0e0; --grid-border:rgba(255,255,255,.42); --grid-accent:#ffed4a; --grid-row-alt:#151515; --grid-hover:#292929; }
+.reports-result-workspace[data-grid-theme="light"] .reports-grouping-panel,
+.reports-result-workspace[data-grid-theme="light"] .reports-pagination,
+.reports-result-workspace[data-grid-theme="light"] .reports-result-details { color:var(--grid-text); background:var(--grid-panel); border-color:var(--grid-border); }
+.reports-result-workspace[data-grid-theme="light"] .reports-pagination .reports-page-button { color:var(--grid-text); background:#fff; border-color:var(--grid-border); }
+.reports-result-workspace[data-grid-theme="contrast"] .reports-grouping-panel,
+.reports-result-workspace[data-grid-theme="contrast"] .reports-pagination,
+.reports-result-workspace[data-grid-theme="contrast"] .reports-result-details { color:var(--grid-text); background:var(--grid-panel); border-color:var(--grid-border); }
 .reports-result-page .reports-result-workspace { color:var(--grid-text); background:var(--grid-bg); border-color:var(--grid-border); }
 .reports-result-page .reports-grid-toolbar { align-items:center; }
 .reports-result-page .reports-grid-toolbar h2 { margin:6px 0 4px; color:var(--grid-text); font-size:18px; }
