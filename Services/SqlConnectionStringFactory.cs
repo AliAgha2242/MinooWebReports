@@ -3,7 +3,7 @@ using MinooWebReports.Models;
 
 namespace MinooWebReports.Services;
 
-public sealed class SqlConnectionStringFactory : IConnectionStringFactory
+public sealed class SqlConnectionStringFactory(IConfiguration configuration) : IConnectionStringFactory
 {
     public string Create(VahedTejari connection)
     {
@@ -15,6 +15,13 @@ public sealed class SqlConnectionStringFactory : IConnectionStringFactory
         if (string.IsNullOrWhiteSpace(connection.DataBAset))
             throw new ArgumentException("Database is required.", nameof(connection));
 
+        var userName = configuration["Reports:TargetSql:UserName"];
+        var password = configuration["Reports:TargetSql:Password"];
+
+        if (string.IsNullOrWhiteSpace(userName) || string.IsNullOrWhiteSpace(password))
+            throw new InvalidOperationException(
+                "Reports:TargetSql:UserName and Reports:TargetSql:Password must be configured.");
+
         var builder = new SqlConnectionStringBuilder
         {
             DataSource = connection.Server.Trim(),
@@ -23,8 +30,8 @@ public sealed class SqlConnectionStringFactory : IConnectionStringFactory
             TrustServerCertificate = true,
             ConnectTimeout = 15,
             ApplicationName = "MinooWebReports",
-            UserID="tavakoli",
-            Password="11"
+            UserID = userName,
+            Password = password
         };
 
         return builder.ConnectionString;

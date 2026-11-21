@@ -1,0 +1,16 @@
+**/.dockerignore
+**/.env
+**/.env.*
+!.env.example
+**/.git
+**/.github
+**/.vs
+**/bin
+**/obj
+**/TestResults
+**/Logs
+**/AppConfig.json
+**/*.user
+**/*.suo
+Dockerfile*
+docker-compose*

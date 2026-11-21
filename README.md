@@ -30,7 +30,7 @@ Reports__MaxRows=5000
 Reports__MaxExcelBytes=20971520
 ```
 
-The report-target connection factory currently uses Windows Integrated Security. Under IIS, the application-pool identity must have the required read permissions on the selected report databases.
+Report-target connections use SQL Server authentication. Configure `Reports__TargetSql__UserName` and `Reports__TargetSql__Password` through environment variables or a secret store. Use a dedicated least-privilege account with SELECT-only permissions on the report databases.
 
 The shared Minoo server configuration file must be available beside the published application as `AppConfig.json` (or set `MinooConfiguration__FilePath` to its full path). The file must contain a `ServersInfo` array with `ServerName` (or `Ip`), `databaseName`, and `VahedeTejariSN`. An optional business-unit display name is read from `VahedetejariDs`, `VahedeTejariDs`, `VahedeTejariDS`, `VahedeTejariName`, `BusinessUnitName`, `UnitName`, or `Name`. The configuration file is environment-specific and must not be committed with secrets.
 
@@ -64,6 +64,25 @@ Sso__Parent__ClientSecret=<shared-secret>
 MinooWebReports accepts a short-lived one-time ticket from the parent application, redeems it server-to-server, and issues its own secure authentication cookie. When the parent is reachable, direct access redirects to its login. When it is unavailable, local login remains available. The SSO ticket flow still requires the shared client secret.
 
 Business-unit choices are loaded from the user's `UserCode` access rows for `ApplicationID = '5'`; only units also present in `ServersInfo` are offered. The selected unit is revalidated against the user's current access list on report execution.
+
+## Docker deployment
+
+The repository includes a multi-stage .NET 10 Dockerfile and a Docker Compose service. SQL Server and Redis remain external services; Compose does not create replacement database or cache containers.
+
+1. Copy `.env.example` to `.env` and fill in the metadata database, Core authentication database, read-only report SQL account, and Redis connection.
+2. Place the environment-specific `AppConfig.json` beside `docker-compose.yml`. It must contain the `ServersInfo` array described above. The file is mounted read-only into the container and is excluded from the Docker build context and Git.
+3. Start the application:
+
+```bash
+docker compose up -d --build
+docker compose logs -f minoo-web-reports
+```
+
+The application listens on container port `8080`; by default it is published on host port `8080`. Set `REPORTS_HTTP_PORT` in `.env` to change the host port. Daily application logs are written to the host `./Logs` directory. Redis, metadata SQL Server, Core authentication SQL Server, and every report target server must be reachable from the Docker host/container network.
+
+The target SQL credentials are shared by the configured report targets. Create a dedicated SQL login with read-only access only. Do not use an administrator account. The Core authentication connection is required for standalone login when the parent MinooWebCore SSO is unavailable. SSO settings are optional; set all four `SSO_PARENT_*` values when enabling parent SSO.
+
+`AppConfig.json` is mandatory at startup. Do not commit it or the real `.env` file.
 
 ## Run
 

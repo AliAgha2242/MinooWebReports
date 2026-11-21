@@ -1,0 +1,38 @@
+services:
+  minoo-web-reports:
+    container_name: minoo-web-reports
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: minoo-web-reports:latest
+    restart: unless-stopped
+    init: true
+    ports:
+      - "${REPORTS_HTTP_PORT:-8080}:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_HTTP_PORTS: "8080"
+      MinooConfiguration__FilePath: /app/config/AppConfig.json
+
+      ConnectionStrings__Redis: "${REDIS_CONNECTION_STRING:-172.16.5.39:6379,abortConnect=false}"
+      ConnectionStrings__ReportsMetadata: "${REPORTS_METADATA_CONNECTION_STRING:?Set REPORTS_METADATA_CONNECTION_STRING in .env}"
+      ConnectionStrings__CoreAuthentication: "${CORE_AUTH_CONNECTION_STRING:?Set CORE_AUTH_CONNECTION_STRING in .env}"
+
+      Reports__TargetSql__UserName: "${REPORTS_TARGET_SQL_USERNAME:?Set REPORTS_TARGET_SQL_USERNAME in .env}"
+      Reports__TargetSql__Password: "${REPORTS_TARGET_SQL_PASSWORD:?Set REPORTS_TARGET_SQL_PASSWORD in .env}"
+
+      Reports__CommandTimeoutSeconds: "${REPORTS_COMMAND_TIMEOUT_SECONDS:-60}"
+      Reports__MaxRows: "${REPORTS_MAX_ROWS:-5000}"
+      Reports__MaxExcelBytes: "${REPORTS_MAX_EXCEL_BYTES:-20971520}"
+
+      Sso__Parent__LoginUrl: "${SSO_PARENT_LOGIN_URL:-}"
+      Sso__Parent__LaunchPath: "${SSO_PARENT_LAUNCH_PATH:-/Account/LaunchReports}"
+      Sso__Parent__RedeemUrl: "${SSO_PARENT_REDEEM_URL:-}"
+      Sso__Parent__ClientSecret: "${SSO_PARENT_CLIENT_SECRET:-}"
+
+      Reports__AdminUserCodes__0: "${REPORTS_ADMIN_USER_CODE_0:-}"
+      Reports__AdminUserCodes__1: "${REPORTS_ADMIN_USER_CODE_1:-}"
+
+    volumes:
+      - ./AppConfig.json:/app/config/AppConfig.json:ro
+      - ./Logs:/app/Logs
