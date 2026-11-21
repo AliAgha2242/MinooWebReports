@@ -23,6 +23,6 @@ EXPOSE 8080
 
 COPY --from=build /app/publish .
 
-RUN mkdir -p /app/Logs /app/config
+RUN mkdir -p /app/Logs
 
 ENTRYPOINT ["dotnet", "MinooWebReports.dll"]
