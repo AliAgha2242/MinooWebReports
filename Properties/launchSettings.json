@@ -9,8 +9,8 @@
     },
     "MinooWebReports": {
       "commandName": "Project",
-      "applicationUrl": "https://0.0.0.0:3031;http://0.0.0.0:3030",
-      "launchBrowser": true
+      "applicationUrl": "https://0.0.0.0:8081;http://0.0.0.0:8080",
+      "launchBrowser": false
 
     }
   },
@@ -18,8 +18,8 @@
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
     "iisExpress": {
-      "applicationUrl": "http://0.0.0.0:4601/",
-      "sslPort": 44386
+      "applicationUrl": "http://0.0.0.0:8080/",
+      "sslPort": 80801
     }
   }
 }

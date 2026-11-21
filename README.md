@@ -4,7 +4,7 @@ ASP.NET Core MVC reporting workspace. The UI follows the shared MinooWebCore vis
 
 ## Requirements
 - .NET 10 SDK
-- Redis reachable at `rabbit-srv:6379`
+- Redis reachable at `172.16.5.39:6379`
 - SQL Server metadata database containing `dbo.ReportDefinitions` and `dbo.ReportParameters`
 - Read-only SQL Server access for every report target
 
@@ -13,7 +13,7 @@ ASP.NET Core MVC reporting workspace. The UI follows the shared MinooWebCore vis
 Redis can be overridden with:
 
 ```text
-ConnectionStrings__Redis=rabbit-srv:6379,abortConnect=false
+ConnectionStrings__Redis=172.16.5.39:6379,abortConnect=false
 ```
 
 Configure the metadata database connection separately. Do not reuse a report-target connection for metadata unless that is explicitly intended:

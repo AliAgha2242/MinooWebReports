@@ -83,7 +83,7 @@ builder.Services.AddSingleton<IMinooConfiguration>(_ =>
     new MinooConfiguration(minooConfigFilePath, minooConfigFileName));
 
 var redisConnection = builder.Configuration.GetConnectionString("Redis")
-    ?? "rabbit-srv:6379,abortConnect=false";
+    ?? "172.16.5.39:6379,abortConnect=false";
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
 {
