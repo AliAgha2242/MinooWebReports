@@ -42,6 +42,7 @@
         const hiddenInputs = container.querySelector("[data-listbox-hidden-inputs]");
         const selectionLabel = container.querySelector("[data-listbox-selection-label]");
         if (!trigger || !dropdown || !search || !list || !hiddenInputs) return;
+        container.dataset.listboxInitialized = "true";
 
         const items = Array.from(list.querySelectorAll("[data-listbox-option]"));
         const initialLimit = 100;
