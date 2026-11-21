@@ -12,17 +12,11 @@ ASP.NET Core MVC reporting workspace. The UI follows the shared MinooWebCore vis
 
 All application settings are read from the repository-root `appsettings.json`. Configure Redis, metadata SQL Server and Core authentication connection strings under `ConnectionStrings` in that file.
 
-Report execution limits:
-
-```text
-Reports__CommandTimeoutSeconds=60
-Reports__MaxRows=5000
-Reports__MaxExcelBytes=20971520
-```
+Report execution limits are configured under the `Reports` section in `appsettings.json`: `CommandTimeoutSeconds`, `MaxRows` and `MaxExcelBytes`.
 
 Report-target connections use SQL Server authentication. Configure `Reports:TargetSql:UserName` and `Reports:TargetSql:Password` in `appsettings.json`. Use a dedicated least-privilege account with SELECT-only permissions on the report databases.
 
-The shared Minoo server configuration file must be available beside the published application as `AppConfig.json` (or set `MinooConfiguration__FilePath` to its full path). The file must contain a `ServersInfo` array with `ServerName` (or `Ip`), `databaseName`, and `VahedeTejariSN`. An optional business-unit display name is read from `VahedetejariDs`, `VahedeTejariDs`, `VahedeTejariDS`, `VahedeTejariName`, `BusinessUnitName`, `UnitName`, or `Name`. The configuration file is environment-specific and must not be committed with secrets.
+The shared Minoo server configuration file must be available at the path configured by `MinooConfiguration:FilePath` in `appsettings.json` (the Docker deployment uses `/app/config/AppConfig.json`). The file must contain a `ServersInfo` array with `ServerName` (or `Ip`), `databaseName`, and `VahedeTejariSN`. An optional business-unit display name is read from `VahedetejariDs`, `VahedeTejariDs`, `VahedeTejariDS`, `VahedeTejariName`, `BusinessUnitName`, `UnitName`, or `Name`. The configuration file is environment-specific and must not be committed with secrets.
 
 ## Authentication and single sign-on
 
@@ -63,9 +57,9 @@ docker compose logs -f minoo-web-reports
 
 The application listens on container port `8080` and is published on host port `8080`. Daily application logs are written to the host `./Logs` directory. Redis, metadata SQL Server, Core authentication SQL Server, and every report target server must be reachable from the Docker host/container network.
 
-The target SQL credentials are shared by the configured report targets. Create a dedicated SQL login with read-only access only. Do not use an administrator account. The Core authentication connection is required for standalone login when the parent MinooWebCore SSO is unavailable. SSO settings are optional; set all four `SSO_PARENT_*` values when enabling parent SSO.
+The target SQL credentials are shared by the configured report targets. Create a dedicated SQL login with read-only access only. Do not use an administrator account. The Core authentication connection is required for standalone login when the parent MinooWebCore SSO is unavailable. SSO settings are optional; populate `Sso:Parent:LoginUrl`, `LaunchPath`, `RedeemUrl` and `ClientSecret` in `appsettings.json` when enabling parent SSO.
 
-`AppConfig.json` is mandatory at startup. Do not commit it or the real `.env` file.
+`AppConfig.json` is mandatory at startup. It is a separate server-directory data file required by the existing `MinooConfiguration` implementation; the `.env` file is no longer used.
 
 ## Run
 
