@@ -246,6 +246,83 @@
                 overlay.hidden = false;
                 overlay.removeAttribute("hidden");
             }, true);
+
+            // Fallback initializer for the searchable ListBox in case the shared
+            // site script is unavailable or fails before binding its handlers.
+            document.querySelectorAll("[data-searchable-listbox]").forEach(container => {
+                if (container.dataset.listboxInitialized === "true") return;
+
+                const trigger = container.querySelector("[data-listbox-trigger]");
+                const dropdown = container.querySelector("[data-listbox-dropdown]");
+                const search = container.querySelector("[data-listbox-search]");
+                const list = container.querySelector("[data-listbox-options]");
+                const hiddenInputs = container.querySelector("[data-listbox-hidden-inputs]");
+                const selectionLabel = container.querySelector("[data-listbox-selection-label]");
+                const status = container.querySelector("[data-listbox-status]");
+                if (!trigger || !dropdown || !search || !list || !hiddenInputs) return;
+
+                const items = Array.from(list.querySelectorAll("[data-listbox-option]"));
+                const selectedItems = () => items.filter(item => item.querySelector("[data-listbox-checkbox]")?.checked);
+                const render = () => {
+                    const query = search.value.trim().toLocaleLowerCase();
+                    const matches = items.filter(item => (item.dataset.searchText || "").toLocaleLowerCase().includes(query));
+                    const visible = new Set(matches.slice(0, 100));
+                    items.forEach(item => {
+                        const checkbox = item.querySelector("[data-listbox-checkbox]");
+                        item.hidden = !visible.has(item) && !checkbox?.checked;
+                    });
+                    if (status) status.textContent = `${matches.length} گزینه پیدا شد · ${selectedItems().length} انتخاب‌شده`;
+                };
+                const sync = () => {
+                    hiddenInputs.replaceChildren();
+                    selectedItems().forEach(item => {
+                        const checkbox = item.querySelector("[data-listbox-checkbox]");
+                        const input = document.createElement("input");
+                        input.type = "hidden";
+                        input.name = list.dataset.fieldName;
+                        input.value = checkbox.value;
+                        hiddenInputs.appendChild(input);
+                    });
+                    if (selectionLabel) selectionLabel.textContent = selectedItems().length
+                        ? `${selectedItems().length} مورد انتخاب شده`
+                        : "انتخاب کنید...";
+                };
+                const close = () => {
+                    dropdown.hidden = true;
+                    trigger.setAttribute("aria-expanded", "false");
+                    container.classList.remove("is-open");
+                };
+                trigger.addEventListener("click", event => {
+                    event.preventDefault();
+                    const shouldOpen = dropdown.hidden;
+                    dropdown.hidden = !shouldOpen;
+                    trigger.setAttribute("aria-expanded", String(shouldOpen));
+                    container.classList.toggle("is-open", shouldOpen);
+                    if (shouldOpen) {
+                        render();
+                        search.focus();
+                    }
+                });
+                list.addEventListener("change", event => {
+                    if (!event.target.matches("[data-listbox-checkbox]")) return;
+                    sync();
+                    render();
+                });
+                search.addEventListener("input", render);
+                search.addEventListener("keydown", event => {
+                    if (event.key === "Escape") {
+                        close();
+                        trigger.focus();
+                    }
+                });
+                document.addEventListener("pointerdown", event => {
+                    if (!container.contains(event.target)) close();
+                });
+                container.dataset.listboxInitialized = "true";
+                sync();
+                render();
+                close();
+            });
         })();
     </script>
 }
