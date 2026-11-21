@@ -20,7 +20,7 @@ public sealed class ServerDirectoryService(IMinooConfiguration configuration) : 
         VahedetejariDs = string.IsNullOrWhiteSpace(server.VahedetejariDs)
             ? $"واحد تجاری {server.VahedeTejariSN:0.##}"
             : server.VahedetejariDs,
-        Server = string.IsNullOrWhiteSpace(server.ServerName) ? server.ServerIp : server.ServerName,
+        Server = string.IsNullOrWhiteSpace(server.ServerIp) ? server.ServerName : server.ServerIp,
         ServerIp = server.ServerIp,
         DataBAset = server.DatabaseName
     };
