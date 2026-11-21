@@ -98,7 +98,7 @@ public sealed class MinooConfiguration : IMinooConfiguration, IDisposable
             {
                 var server = new ServerInfo
                 {
-                    ServerName = FirstNonEmpty(ReadString(item, "Ip", "ServerIp"), ReadString(item, "ServerName")),
+                    ServerName = FirstNonEmpty(ReadString(item, "ServerName", "ServerName"), ReadString(item, "ServerName")),
                     DatabaseName = ReadString(item, "databaseName", "DatabaseName"),
                     VahedeTejariSN = ReadDecimal(item, "VahedeTejariSN"),
                     ServerIp = ReadString(item, "Ip", "ServerIp"),
