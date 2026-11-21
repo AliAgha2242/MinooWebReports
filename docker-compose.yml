@@ -10,5 +10,5 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./AppConfig.json:/app/config/AppConfig.json:ro
+      - ./AppConfig.json:/app/AppConfig.json:ro
       - ./Logs:/app/Logs
