@@ -10,17 +10,7 @@ ASP.NET Core MVC reporting workspace. The UI follows the shared MinooWebCore vis
 
 ## Configuration
 
-Redis can be overridden with:
-
-```text
-ConnectionStrings__Redis=172.16.5.39:6379,abortConnect=false
-```
-
-Configure the metadata database connection separately. Do not reuse a report-target connection for metadata unless that is explicitly intended:
-
-```text
-ConnectionStrings__ReportsMetadata=<metadata-database-connection-string>
-```
+All application settings are read from the repository-root `appsettings.json`. Configure Redis, metadata SQL Server and Core authentication connection strings under `ConnectionStrings` in that file.
 
 Report execution limits:
 
@@ -30,7 +20,7 @@ Reports__MaxRows=5000
 Reports__MaxExcelBytes=20971520
 ```
 
-Report-target connections use SQL Server authentication. Configure `Reports__TargetSql__UserName` and `Reports__TargetSql__Password` through environment variables or a secret store. Use a dedicated least-privilege account with SELECT-only permissions on the report databases.
+Report-target connections use SQL Server authentication. Configure `Reports:TargetSql:UserName` and `Reports:TargetSql:Password` in `appsettings.json`. Use a dedicated least-privilege account with SELECT-only permissions on the report databases.
 
 The shared Minoo server configuration file must be available beside the published application as `AppConfig.json` (or set `MinooConfiguration__FilePath` to its full path). The file must contain a `ServersInfo` array with `ServerName` (or `Ip`), `databaseName`, and `VahedeTejariSN`. An optional business-unit display name is read from `VahedetejariDs`, `VahedeTejariDs`, `VahedeTejariDS`, `VahedeTejariName`, `BusinessUnitName`, `UnitName`, or `Name`. The configuration file is environment-specific and must not be committed with secrets.
 
@@ -41,25 +31,18 @@ MinooWebReports supports both SSO and standalone login:
 - When the configured MinooWebCore login page responds successfully, unauthenticated users are redirected to the parent login and returned through the one-time SSO ticket flow.
 - The parent login endpoint is probed with a short timeout. If Core is stopped, unreachable, or returns an unsuccessful response, Reports displays its own login page.
 - Standalone login uses the same credential validation behavior as MinooWebCore: the submitted username is matched against `Users.UserCode`, and the stored password is decoded with the same legacy `DecodePass.Security.Decode` routine before ordinal comparison.
-- Configure `ConnectionStrings__CoreAuthentication` to the same database connection string used by MinooWebCore's `ConnectionStrings:DefaultConnection`. This is required for standalone login and must be supplied through environment variables or a secret store.
+- Set `ConnectionStrings:CoreAuthentication` in `appsettings.json` to the same database connection string used by MinooWebCore's `ConnectionStrings:DefaultConnection`. This is required for standalone login.
 - Reports issues its own authentication cookie and includes `UserCode` as a claim so the existing business-unit access query continues to work.
 
 Example:
 
-```text
-ConnectionStrings__CoreAuthentication=<same database connection string as MinooWebCore>
+```json
+"CoreAuthentication": "<same database connection string as MinooWebCore>"
 ```
 
 ## Single sign-on configuration
 
-Configure these values on the Reports deployment. The client secret must be a high-entropy secret shared with MinooWebCore and supplied through a secret store or environment variable, never committed to source control:
-
-```text
-Sso__Parent__LoginUrl=https://<minoo-webcore-host>/Account/Login
-Sso__Parent__LaunchPath=/Account/LaunchReports
-Sso__Parent__RedeemUrl=https://<minoo-webcore-host>/api/sso/reports/redeem
-Sso__Parent__ClientSecret=<shared-secret>
-```
+Configure these values under `Sso:Parent` in `appsettings.json`. Use the MinooWebCore server IP address in the URLs and set the same high-entropy client secret in both applications.
 
 MinooWebReports accepts a short-lived one-time ticket from the parent application, redeems it server-to-server, and issues its own secure authentication cookie. When the parent is reachable, direct access redirects to its login. When it is unavailable, local login remains available. The SSO ticket flow still requires the shared client secret.
 
@@ -69,7 +52,7 @@ Business-unit choices are loaded from the user's `UserCode` access rows for `App
 
 The repository includes a multi-stage .NET 10 Dockerfile and a Docker Compose service. SQL Server and Redis remain external services; Compose does not create replacement database or cache containers.
 
-1. Copy `.env.example` to `.env` and fill in the metadata database, Core authentication database, read-only report SQL account, and Redis connection.
+1. Configure database connections, Redis, report SQL credentials, admin user codes and SSO settings in `appsettings.json`.
 2. Place the environment-specific `AppConfig.json` beside `docker-compose.yml`. It must contain the `ServersInfo` array described above. The file is mounted read-only into the container and is excluded from the Docker build context and Git.
 3. Start the application:
 
@@ -78,7 +61,7 @@ docker compose up -d --build
 docker compose logs -f minoo-web-reports
 ```
 
-The application listens on container port `8080`; by default it is published on host port `8080`. Set `REPORTS_HTTP_PORT` in `.env` to change the host port. Daily application logs are written to the host `./Logs` directory. Redis, metadata SQL Server, Core authentication SQL Server, and every report target server must be reachable from the Docker host/container network.
+The application listens on container port `8080` and is published on host port `8080`. Daily application logs are written to the host `./Logs` directory. Redis, metadata SQL Server, Core authentication SQL Server, and every report target server must be reachable from the Docker host/container network.
 
 The target SQL credentials are shared by the configured report targets. Create a dedicated SQL login with read-only access only. Do not use an administrator account. The Core authentication connection is required for standalone login when the parent MinooWebCore SSO is unavailable. SSO settings are optional; set all four `SSO_PARENT_*` values when enabling parent SSO.
 
@@ -112,12 +95,7 @@ dotnet run
 
 ## Default parameter values and administration
 
-Configure the user codes allowed to manage parameter defaults on the Reports deployment:
-
-```text
-Reports__AdminUserCodes__0=<admin-user-code>
-Reports__AdminUserCodes__1=<another-admin-user-code>
-```
+Configure the user codes allowed to manage parameter defaults in the `Reports:AdminUserCodes` array in `appsettings.json`.
 
 Only configured users can open `/AdminReports` and update defaults. The feature stores defaults in `dbo.ReportParameters.DefaultValue`. Apply `Database/Migrations/20261107_AddDefaultValueToReportParameters.sql` once before deploying the application changes.
 
@@ -151,8 +129,8 @@ Preferences include page size, hidden columns, filters, sorting, column widths, 
 - Give the report execution identity **SELECT-only permissions** on report databases. The SQL text gate is defense-in-depth, not a substitute for database permissions.
 - Never grant report users write access to target databases.
 - Per-user authentication through MinooWebCore SSO or standalone credential validation, plus per-request business-unit access validation. Per-report authorization policies still need to be defined.
-- Store connection strings and credentials in environment variables or a secret store, never in source control.
-- The metadata connection string must be configured as `ConnectionStrings__ReportsMetadata`; it is intentionally not hard-coded.
+- Connection strings and credentials are read from `appsettings.json` for this deployment. Restrict repository access and protect this file because it contains credentials.
+- The metadata connection string is configured as `ConnectionStrings:ReportsMetadata` in `appsettings.json`.
 - The Minoo `AppConfig.json` server directory must be present and maintained in each deployment environment.
 
 ## Multi-server report execution
