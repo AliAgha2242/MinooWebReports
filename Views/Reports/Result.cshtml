@@ -133,7 +133,14 @@
         }
 
         <div class="reports-table-wrap reports-result-table-wrap">
-            <table class="reports-data-table" data-report-table>
+            <table class="reports-data-table" data-report-table style="width:max-content;table-layout:fixed">
+                <colgroup data-report-columns>
+                    @foreach (var column in visibleColumns)
+                    {
+                        var width = Model.ColumnWidths.TryGetValue(column, out var savedWidth) ? savedWidth : 160;
+                        <col data-column="@column" style="width:@(width)px" />
+                    }
+                </colgroup>
                 <thead>
                     <tr class="reports-table-heading-row">
                         @foreach (var column in visibleColumns)

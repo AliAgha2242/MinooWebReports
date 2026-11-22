@@ -2,19 +2,51 @@
     const connectionSearch = document.querySelector("[data-connection-search]");
     const connectionItems = Array.from(document.querySelectorAll("[data-connection-search-item]"));
     const connectionNoResults = document.querySelector("[data-connection-no-results]");
-    if (connectionSearch && connectionItems.length) {
+    const connectionSearchCount = document.querySelector("[data-connection-search-count]");
+    const connectionSearchClear = document.querySelector("[data-connection-search-clear]");
+
+    const normalizeConnectionSearch = value => String(value ?? "")
+        .normalize("NFKC")
+        .toLocaleLowerCase("fa-IR")
+        .replace(/[يى]/g, "ی")
+        .replace(/ك/g, "ک")
+        .replace(/[۰-۹]/g, digit => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+        .replace(/[٠-٩]/g, digit => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
+        .replace(/\s+/g, " ")
+        .trim();
+
+    if (connectionSearch) {
         const filterConnections = () => {
-            const query = connectionSearch.value.trim().toLocaleLowerCase();
+            const query = normalizeConnectionSearch(connectionSearch.value);
+            const terms = query.split(" ").filter(Boolean);
             let visibleCount = 0;
+
             connectionItems.forEach(item => {
-                const searchableText = (item.dataset.searchText || item.textContent || "").toLocaleLowerCase();
-                const matches = !query || searchableText.includes(query);
+                const searchableText = normalizeConnectionSearch(
+                    item.dataset.searchText || item.textContent || ""
+                );
+                const matches = terms.every(term => searchableText.includes(term));
                 item.hidden = !matches;
                 if (matches) visibleCount++;
             });
-            if (connectionNoResults) connectionNoResults.hidden = !query || visibleCount > 0;
+
+            if (connectionNoResults)
+                connectionNoResults.hidden = !query || visibleCount > 0;
+            if (connectionSearchCount)
+                connectionSearchCount.textContent = query
+                    ? visibleCount + " مورد از " + connectionItems.length + " محل اتصال"
+                    : connectionItems.length + " محل اتصال";
+            if (connectionSearchClear)
+                connectionSearchClear.hidden = !connectionSearch.value;
         };
+
         connectionSearch.addEventListener("input", filterConnections);
+        connectionSearchClear?.addEventListener("click", () => {
+            connectionSearch.value = "";
+            filterConnections();
+            connectionSearch.focus();
+        });
+        filterConnections();
     }
 
     document.querySelectorAll("[data-report-run-form]").forEach(form => {
@@ -727,40 +759,72 @@
         };
         reportGrid.addEventListener("change", reportGrid._reportThemeChangeHandler);
 
-        // Resize using a real colgroup so the header, filter row and body cells
-        // all follow the same width. The table expands horizontally when needed.
-        const resizeColumns = ensureColumnGroup();
-        table?.querySelectorAll("[data-column-resizer]").forEach(handle => {
-            handle.addEventListener("pointerdown", event => {
-                event.preventDefault();
-                event.stopPropagation();
-                const header = handle.closest("[data-column-header]");
-                if (!header) return;
-                const column = header.dataset.columnHeader;
-                const columnIndex = getColumnHeaders().indexOf(header);
-                const columnElement = resizeColumns[columnIndex];
-                const startX = event.clientX;
-                const startWidth = header.getBoundingClientRect().width;
+        // Use a colgroup for deterministic sizing across header, filters and body.
+        // Delegation keeps resizing active even when the report table is refreshed by AJAX.
+        ensureColumnGroup();
+        table?.style.setProperty("table-layout", "fixed");
+        const resizeHandler = event => {
+            const handle = event.target.closest?.("[data-column-resizer]");
+            if (!handle || !reportGrid.contains(handle) || event.button !== 0) return;
 
-                const move = moveEvent => {
-                    const width = validWidth(startWidth + (startX - moveEvent.clientX));
-                    columnWidths[column] = width;
-                    header.style.width = width + "px";
-                    header.style.minWidth = "90px";
-                    if (columnElement) columnElement.style.width = width + "px";
-                    updateTableWidth();
-                };
-                const finish = () => {
-                    document.removeEventListener("pointermove", move);
-                    document.removeEventListener("pointerup", finish);
-                    document.removeEventListener("pointercancel", finish);
-                    persistPreferences();
-                };
-                document.addEventListener("pointermove", move);
-                document.addEventListener("pointerup", finish, { once: true });
-                document.addEventListener("pointercancel", finish, { once: true });
-            });
-        });
+            const header = handle.closest("[data-column-header]");
+            if (!header) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            const column = header.dataset.columnHeader;
+            const currentColumns = ensureColumnGroup();
+            const columnElement = currentColumns.find(item => item.dataset.column === column);
+            const startX = event.clientX;
+            const startWidth = validWidth(columnWidths[column] || header.getBoundingClientRect().width);
+            const pointerId = event.pointerId;
+            let finished = false;
+
+            try {
+                handle.setPointerCapture(pointerId);
+            } catch {
+                // Document-level pointer listeners remain as a fallback.
+            }
+
+            reportGrid.classList.add("is-resizing");
+            document.documentElement.style.cursor = "col-resize";
+            document.body.style.userSelect = "none";
+
+            const finish = () => {
+                if (finished) return;
+                finished = true;
+                document.removeEventListener("pointermove", move);
+                document.removeEventListener("pointerup", finish);
+                document.removeEventListener("pointercancel", finish);
+                window.removeEventListener("blur", finish);
+                reportGrid.classList.remove("is-resizing");
+                document.documentElement.style.cursor = "";
+                document.body.style.userSelect = "";
+                persistPreferences();
+            };
+
+            const move = moveEvent => {
+                if (pointerId !== undefined && moveEvent.pointerId !== pointerId) return;
+                moveEvent.preventDefault();
+                // In RTL, dragging the divider to the left increases the column width.
+                const width = validWidth(startWidth + (startX - moveEvent.clientX));
+                columnWidths[column] = width;
+                header.style.width = width + "px";
+                if (columnElement) columnElement.style.width = width + "px";
+                updateTableWidth();
+            };
+
+            document.addEventListener("pointermove", move, { passive: false });
+            document.addEventListener("pointerup", finish);
+            document.addEventListener("pointercancel", finish);
+            window.addEventListener("blur", finish);
+        };
+
+        if (reportGrid._reportColumnResizeHandler)
+            reportGrid.removeEventListener("pointerdown", reportGrid._reportColumnResizeHandler);
+        reportGrid._reportColumnResizeHandler = resizeHandler;
+        reportGrid.addEventListener("pointerdown", resizeHandler);
 
         // Drag a column into the grouping area, then reorder grouped columns by dragging chips.
         let draggedGroup = null;

@@ -681,3 +681,17 @@ body:has(.reports-result-workspace:fullscreen) { overflow:hidden; }
 /* Keep the resize grip outside the clipped title text and clickable. */
 .reports-result-page .reports-th-title { overflow: visible; }
 .reports-result-page .reports-resize-handle { pointer-events: auto; }
+
+
+/* Connection selector search */
+.reports-connection-search-wrap { position:relative; display:flex; align-items:center; gap:8px; }
+.reports-connection-search-wrap .reports-connection-search { flex:1; min-width:0; margin-bottom:4px; }
+.reports-connection-search-clear { flex:0 0 auto; min-height:36px; padding:0 12px; border:1px solid rgba(105,224,223,.24); border-radius:8px; color:#b9eeeb; background:rgba(34,126,147,.1); cursor:pointer; font:inherit; font-size:10px; }
+.reports-connection-search-clear[hidden] { display:none !important; }
+.reports-connection-search-count { margin:0 0 9px; color:#91a9bd; font-size:10px; }
+
+/* Column resize hit target and drag feedback */
+.reports-result-page .reports-data-table col { min-width:90px; }
+.reports-result-page .reports-data-table th { position:relative; }
+.reports-result-page .reports-resize-handle { display:block; width:12px; pointer-events:auto; cursor:col-resize; touch-action:none; }
+.reports-result-page.is-resizing, .reports-result-page.is-resizing * { cursor:col-resize !important; user-select:none !important; }

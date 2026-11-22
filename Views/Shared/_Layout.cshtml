@@ -1,6 +1,6 @@
 @inject Microsoft.Extensions.Configuration.IConfiguration Configuration
 @{
-    var minooWebCoreUrl = Configuration["Sso:Parent:LoginUrl"];
+    var minooWebCoreUrl = Configuration["Sso:Parent:HomeUrl"] ?? Configuration["Sso:Parent:LoginUrl"];
 }
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
@@ -18,9 +18,9 @@
 <body>
     @if (!string.IsNullOrWhiteSpace(minooWebCoreUrl))
     {
-        <a class="global-core-link" href="@minooWebCoreUrl" title="بازگشت به سامانه اصلی مینو">
+        <a class="global-core-link" href="@minooWebCoreUrl" title="بازگشت به سامانه اصلی مینو" aria-label="بازگشت به MinooWebCore">
             <span aria-hidden="true">↶</span>
-            <span>بازگشت به Minoo Web Core</span>
+            <span>بازگشت به MinooWebCore</span>
         </a>
     }
     @if (User.Identity?.IsAuthenticated == true)

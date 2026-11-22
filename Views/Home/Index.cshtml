@@ -83,15 +83,19 @@
                     <span class="report-builder-icon">⌘</span>
                 </div>
 
-                <input type="search" class="reports-connection-search" data-connection-search
-                       placeholder="جست‌وجوی نام واحد تجاری، سرور یا دیتابیس..." aria-label="جست‌وجوی محل‌های اتصال"
-                       autocomplete="off" />
+                <div class="reports-connection-search-wrap">
+                    <input type="search" class="reports-connection-search" data-connection-search
+                           placeholder="جست‌وجوی نام واحد، سرور، IP یا دیتابیس..." aria-label="جست‌وجوی محل‌های اتصال"
+                           autocomplete="off" />
+                    <button type="button" class="reports-connection-search-clear" data-connection-search-clear hidden>پاک‌کردن</button>
+                </div>
+                <p class="reports-connection-search-count" data-connection-search-count aria-live="polite">@connections.Count محل اتصال</p>
                 <div class="reports-connection-list" data-connection-list>
                     @foreach (var item in connections)
                     {
                         var isSelected = selected?.VahedetejariSn == item.VahedetejariSn;
                         <form asp-action="Select" method="post" class="reports-connection-card @(isSelected ? "is-selected" : "")"
-                              data-connection-search-item data-search-text="@($"{item.VahedetejariDs} {item.Server} {item.DataBAset} {item.VahedetejariSn}")">
+                              data-connection-search-item data-search-text="@($"{item.VahedetejariDs} {item.Server} {item.ServerIp} {item.DataBAset} {item.VahedetejariSn}")">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="vahedetejariSn" value="@item.VahedetejariSn" />
                             <span class="reports-connection-icon">DB</span>
