@@ -858,6 +858,7 @@
         // Ensure the first submission also sends the initial Redis/browser state.
         if (widthsInput) widthsInput.value = JSON.stringify(columnWidths);
         if (themeInput) themeInput.value = reportGrid.dataset.gridTheme;
+    }
     };
 
     initializeReportGrid();
