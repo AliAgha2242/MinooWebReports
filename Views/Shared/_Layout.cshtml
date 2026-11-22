@@ -1,6 +1,6 @@
 @inject Microsoft.Extensions.Configuration.IConfiguration Configuration
 @{
-    var minooWebCoreUrl = Configuration["Sso:LoginUrl"];
+    var minooWebCoreUrl = Configuration["Sso:Parent:LoginUrl"];
 }
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
