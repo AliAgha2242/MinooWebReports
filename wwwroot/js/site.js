@@ -1,4 +1,22 @@
 (() => {
+    const connectionSearch = document.querySelector("[data-connection-search]");
+    const connectionItems = Array.from(document.querySelectorAll("[data-connection-search-item]"));
+    const connectionNoResults = document.querySelector("[data-connection-no-results]");
+    if (connectionSearch && connectionItems.length) {
+        const filterConnections = () => {
+            const query = connectionSearch.value.trim().toLocaleLowerCase();
+            let visibleCount = 0;
+            connectionItems.forEach(item => {
+                const searchableText = (item.dataset.searchText || item.textContent || "").toLocaleLowerCase();
+                const matches = !query || searchableText.includes(query);
+                item.hidden = !matches;
+                if (matches) visibleCount++;
+            });
+            if (connectionNoResults) connectionNoResults.hidden = !query || visibleCount > 0;
+        };
+        connectionSearch.addEventListener("input", filterConnections);
+    }
+
     document.querySelectorAll("[data-report-run-form]").forEach(form => {
         let isSubmitting = false;
 
@@ -516,16 +534,49 @@
         const columnWidths = { ...serverColumnWidths, ...(browserPreferences.columnWidths || {}) };
         const validWidth = value => Math.max(90, Math.min(800, Math.round(Number(value) || 160)));
 
-        const applyWidths = () => {
-            table?.querySelectorAll("[data-column-header]").forEach(header => {
+        const getColumnHeaders = () => Array.from(
+            table?.querySelectorAll(".reports-table-heading-row [data-column-header]") || []
+        );
+
+        const ensureColumnGroup = () => {
+            if (!table) return [];
+            let group = table.querySelector("colgroup[data-report-columns]");
+            if (!group) {
+                group = document.createElement("colgroup");
+                group.dataset.reportColumns = "";
+                getColumnHeaders().forEach(header => {
+                    const column = document.createElement("col");
+                    column.dataset.column = header.dataset.columnHeader;
+                    group.appendChild(column);
+                });
+                table.insertBefore(group, table.firstChild);
+            }
+            return Array.from(group.querySelectorAll("col"));
+        };
+
+        const updateTableWidth = () => {
+            if (!table) return;
+            const totalWidth = getColumnHeaders().reduce((total, header) => {
                 const column = header.dataset.columnHeader;
-                if (columnWidths[column]) {
-                    const width = validWidth(columnWidths[column]);
-                    header.style.width = width + "px";
-                    header.style.minWidth = "90px";
-                    columnWidths[column] = width;
-                }
+                return total + validWidth(columnWidths[column] || 160);
+            }, 0);
+            const availableWidth = table.closest(".reports-table-wrap")?.clientWidth || 0;
+            table.style.width = Math.max(totalWidth, availableWidth, 560) + "px";
+        };
+
+        const applyWidths = () => {
+            if (!table) return;
+            const headers = getColumnHeaders();
+            const columns = ensureColumnGroup();
+            headers.forEach((header, index) => {
+                const column = header.dataset.columnHeader;
+                const width = validWidth(columnWidths[column] || header.getBoundingClientRect().width || 160);
+                columnWidths[column] = width;
+                header.style.width = width + "px";
+                header.style.minWidth = "90px";
+                if (columns[index]) columns[index].style.width = width + "px";
             });
+            updateTableWidth();
         };
 
         const applyTheme = value => {
@@ -676,13 +727,18 @@
         };
         reportGrid.addEventListener("change", reportGrid._reportThemeChangeHandler);
 
-        // Resize from the left edge (RTL layout), with a hard 90px minimum.
+        // Resize using a real colgroup so the header, filter row and body cells
+        // all follow the same width. The table expands horizontally when needed.
+        const resizeColumns = ensureColumnGroup();
         table?.querySelectorAll("[data-column-resizer]").forEach(handle => {
             handle.addEventListener("pointerdown", event => {
                 event.preventDefault();
+                event.stopPropagation();
                 const header = handle.closest("[data-column-header]");
                 if (!header) return;
                 const column = header.dataset.columnHeader;
+                const columnIndex = getColumnHeaders().indexOf(header);
+                const columnElement = resizeColumns[columnIndex];
                 const startX = event.clientX;
                 const startWidth = header.getBoundingClientRect().width;
 
@@ -691,6 +747,8 @@
                     columnWidths[column] = width;
                     header.style.width = width + "px";
                     header.style.minWidth = "90px";
+                    if (columnElement) columnElement.style.width = width + "px";
+                    updateTableWidth();
                 };
                 const finish = () => {
                     document.removeEventListener("pointermove", move);
