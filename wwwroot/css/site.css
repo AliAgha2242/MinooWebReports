@@ -359,26 +359,28 @@ h1 { font-size: 21px; line-height: 1.4; text-align: center; margin: 0; font-weig
 }
 
 
-/* Global sign-out action for authenticated pages */
-.global-logout-form { position: fixed; z-index: 1000; top: 16px; left: 18px; margin: 0; }
-.global-logout-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 0 13px; border: 1px solid rgba(255,140,140,.28); border-radius: 10px; color: #ffc0c0; background: rgba(10,25,40,.88); box-shadow: 0 6px 20px rgba(0,0,0,.18); backdrop-filter: blur(10px); cursor: pointer; font: inherit; font-size: 11px; transition: border-color .2s, background .2s, color .2s; }
-.global-logout-button:hover { border-color: rgba(255,140,140,.65); color: #fff; background: rgba(119,39,48,.88); }
-.global-logout-button span:first-child { font-size: 17px; line-height: 1; }
-@media (max-width: 560px) { .global-logout-form { top: 10px; left: 10px; } .global-logout-button { min-height: 32px; padding: 0 10px; font-size: 10px; } }
-
-
-/* Readable Persian system font stack and persistent navigation to the parent portal */
-.global-core-link {
-  position: fixed; top: 60px; left: 16px; z-index: 9998;
-  display: inline-flex; align-items: center; gap: 8px;
-  min-height: 36px; padding: 0 12px;
-  border: 1px solid rgba(105,224,223,.24); border-radius: 9px;
-  color: #b9eeeb; background: rgba(7,25,42,.92);
-  box-shadow: 0 8px 24px rgba(0,0,0,.18);
-  font-size: 10px; transition: background .18s,border-color .18s,color .18s;
+/* Navigation actions stay in document flow and never cover page content. */
+.global-nav-actions {
+  position:relative; z-index:20; display:flex; align-items:center; justify-content:flex-end;
+  flex-wrap:wrap; gap:8px; width:min(100% - 36px, 1480px);
+  margin:0 auto 10px; padding:12px 0 0; direction:ltr;
 }
-.global-core-link:hover { color: #fff; background: rgba(34,126,147,.24); border-color: rgba(105,224,223,.55); }
-.global-core-link span:first-child { font-size: 17px; line-height: 1; }
+.global-logout-form { position:static; display:inline-flex; margin:0; }
+.global-logout-button,.global-core-link {
+  position:static; display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  min-height:36px; padding:0 12px; border:1px solid rgba(105,224,223,.24);
+  border-radius:9px; color:#b9eeeb; background:rgba(7,25,42,.92);
+  box-shadow:0 6px 20px rgba(0,0,0,.14); font:inherit; font-size:10px;
+  text-decoration:none; transition:background .18s,border-color .18s,color .18s;
+}
+.global-logout-button { border-color:rgba(255,140,140,.28); color:#ffc0c0; cursor:pointer; }
+.global-logout-button:hover { border-color:rgba(255,140,140,.65); color:#fff; background:rgba(119,39,48,.88); }
+.global-core-link:hover { color:#fff; background:rgba(34,126,147,.24); border-color:rgba(105,224,223,.55); }
+.global-nav-actions span:first-child { font-size:16px; line-height:1; }
+@media(max-width:560px) {
+  .global-nav-actions { width:calc(100% - 20px); gap:6px; padding-top:8px; margin-bottom:8px; }
+  .global-logout-button,.global-core-link { min-height:32px; padding:0 9px; font-size:9px; }
+}
 .reports-connection-search {
   width: 100%; min-height: 40px; margin: 12px 0;
   padding: 0 12px; border: 1px solid rgba(153,190,219,.2);
