@@ -10,7 +10,7 @@
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; min-height: 100%; }
-body { font-family: "Vazirmatn", Tahoma, Arial, sans-serif; background: var(--navy); color: var(--text); }
+body { font-family: "Segoe UI", system-ui, Tahoma, sans-serif; background: var(--navy); color: var(--text); }
 button, input { font: inherit; }
 a { color: inherit; text-decoration: none; }
 .login-page {
@@ -364,3 +364,30 @@ h1 { font-size: 21px; line-height: 1.4; text-align: center; margin: 0; font-weig
 .global-logout-button:hover { border-color: rgba(255,140,140,.65); color: #fff; background: rgba(119,39,48,.88); }
 .global-logout-button span:first-child { font-size: 17px; line-height: 1; }
 @media (max-width: 560px) { .global-logout-form { top: 10px; left: 10px; } .global-logout-button { min-height: 32px; padding: 0 10px; font-size: 10px; } }
+
+
+/* Readable Persian system font stack and persistent navigation to the parent portal */
+.global-core-link {
+  position: fixed; top: 12px; left: 16px; z-index: 9998;
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 36px; padding: 0 12px;
+  border: 1px solid rgba(105,224,223,.24); border-radius: 9px;
+  color: #b9eeeb; background: rgba(7,25,42,.92);
+  box-shadow: 0 8px 24px rgba(0,0,0,.18);
+  font-size: 10px; transition: background .18s,border-color .18s,color .18s;
+}
+.global-core-link:hover { color: #fff; background: rgba(34,126,147,.24); border-color: rgba(105,224,223,.55); }
+.global-core-link span:first-child { font-size: 17px; line-height: 1; }
+.reports-connection-search {
+  width: 100%; min-height: 40px; margin: 12px 0;
+  padding: 0 12px; border: 1px solid rgba(153,190,219,.2);
+  border-radius: 9px; outline: none; color: #eaf5fc;
+  background: #0a1d30; font: inherit; font-size: 11px;
+}
+.reports-connection-search:focus { border-color: #69e0df; box-shadow: 0 0 0 3px rgba(105,224,223,.1); }
+[data-connection-search-item][hidden] { display: none !important; }
+.reports-connection-no-results { margin: 10px 0; color: #9bb5c9; font-size: 10px; }
+.reports-connection-no-results[hidden] { display: none !important; }
+@media(max-width:650px) {
+  .global-core-link { top: 8px; left: 8px; min-height: 32px; padding: 0 9px; font-size: 9px; }
+}
