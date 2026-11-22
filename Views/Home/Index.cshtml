@@ -83,11 +83,15 @@
                     <span class="report-builder-icon">⌘</span>
                 </div>
 
-                <div class="reports-connection-list">
+                <input type="search" class="reports-connection-search" data-connection-search
+                       placeholder="جست‌وجوی نام واحد تجاری، سرور یا دیتابیس..." aria-label="جست‌وجوی محل‌های اتصال"
+                       autocomplete="off" />
+                <div class="reports-connection-list" data-connection-list>
                     @foreach (var item in connections)
                     {
                         var isSelected = selected?.VahedetejariSn == item.VahedetejariSn;
-                        <form asp-action="Select" method="post" class="reports-connection-card @(isSelected ? "is-selected" : "")">
+                        <form asp-action="Select" method="post" class="reports-connection-card @(isSelected ? "is-selected" : "")"
+                              data-connection-search-item data-search-text="@($"{item.VahedetejariDs} {item.Server} {item.DataBAset} {item.VahedetejariSn}")">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="vahedetejariSn" value="@item.VahedetejariSn" />
                             <span class="reports-connection-icon">DB</span>
@@ -106,6 +110,7 @@
                         </form>
                     }
                 </div>
+                <p class="reports-connection-no-results" data-connection-no-results hidden>محل اتصالی با این عبارت پیدا نشد.</p>
                 <p class="reports-demo-hint"><span>i</span> فقط واحدهای تجاری مجاز برای حساب کاربری شما نمایش داده می‌شوند؛ اطلاعات سرور و دیتابیس از AppConfig.json تکمیل می‌شود.</p>
             </section>
 
