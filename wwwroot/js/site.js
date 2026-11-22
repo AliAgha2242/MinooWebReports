@@ -838,13 +838,6 @@
             document.addEventListener("mousemove", move, { passive: false });
             document.addEventListener("pointerup", finish);
             document.addEventListener("pointercancel", finish);
-            // Mouse fallback for older browsers/webviews where pointer events are incomplete.
-            const mouseMove = mouseEvent => move({ ...mouseEvent, pointerId: undefined, preventDefault: () => mouseEvent.preventDefault() });
-            const mouseUp = () => {
-                document.removeEventListener("mousemove", mouseMove);
-                document.removeEventListener("mouseup", mouseUp);
-                finish();
-            };
             window.addEventListener("blur", finish);
         };
 
