@@ -83,13 +83,17 @@
                     <span class="report-builder-icon">⌘</span>
                 </div>
 
-                <div class="reports-connection-search-wrap">
-                    <input type="search" class="reports-connection-search" data-connection-search
-                           placeholder="جست‌وجوی نام واحد، سرور، IP یا دیتابیس..." aria-label="جست‌وجوی محل‌های اتصال"
-                           autocomplete="off" />
-                    <button type="button" class="reports-connection-search-clear" data-connection-search-clear hidden>پاک‌کردن</button>
+                <div class="reports-connection-search-panel" role="search" aria-label="جست‌وجوی محل‌های اتصال">
+                    <label for="connection-search-input">جست‌وجو در محل‌های اتصال</label>
+                    <div class="reports-connection-search-wrap">
+                        <span class="reports-connection-search-icon" aria-hidden="true">⌕</span>
+                        <input id="connection-search-input" type="search" class="reports-connection-search" data-connection-search
+                               placeholder="نام شرکت، واحد تجاری، سرور، IP یا دیتابیس را بنویسید..." aria-label="جست‌وجوی محل‌های اتصال"
+                               autocomplete="off" />
+                        <button type="button" class="reports-connection-search-clear" data-connection-search-clear hidden>پاک‌کردن</button>
+                    </div>
+                    <p class="reports-connection-search-count" data-connection-search-count aria-live="polite">@connections.Count محل اتصال</p>
                 </div>
-                <p class="reports-connection-search-count" data-connection-search-count aria-live="polite">@connections.Count محل اتصال</p>
                 <div class="reports-connection-list" data-connection-list>
                     @foreach (var item in connections)
                     {

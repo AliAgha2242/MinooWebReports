@@ -795,29 +795,56 @@
                 if (finished) return;
                 finished = true;
                 document.removeEventListener("pointermove", move);
+                document.removeEventListener("mousemove", move);
                 document.removeEventListener("pointerup", finish);
                 document.removeEventListener("pointercancel", finish);
                 window.removeEventListener("blur", finish);
                 reportGrid.classList.remove("is-resizing");
                 document.documentElement.style.cursor = "";
                 document.body.style.userSelect = "";
+                applyWidths();
                 persistPreferences();
             };
 
             const move = moveEvent => {
                 if (pointerId !== undefined && moveEvent.pointerId !== pointerId) return;
                 moveEvent.preventDefault();
-                // In RTL, dragging the divider to the left increases the column width.
+                // The resize grip is on the left edge in RTL: moving it left grows the column.
                 const width = validWidth(startWidth + (startX - moveEvent.clientX));
                 columnWidths[column] = width;
-                header.style.width = width + "px";
+                header.style.setProperty("width", width + "px", "important");
+                header.style.setProperty("min-width", width + "px", "important");
+                header.style.setProperty("max-width", width + "px", "important");
                 if (columnElement) columnElement.style.width = width + "px";
+
+                // Explicitly size cells in this column as well; this covers browsers that
+                // keep intrinsic table-cell widths despite a colgroup update.
+                const headerCells = getColumnHeaders();
+                const columnIndex = headerCells.indexOf(header);
+                if (columnIndex >= 0) {
+                    table.querySelectorAll("tr").forEach(row => {
+                        const cell = row.children[columnIndex];
+                        if (cell) {
+                            cell.style.setProperty("width", width + "px", "important");
+                            cell.style.setProperty("min-width", width + "px", "important");
+                            cell.style.setProperty("max-width", width + "px", "important");
+                        }
+                    });
+                }
                 updateTableWidth();
             };
 
             document.addEventListener("pointermove", move, { passive: false });
+            document.addEventListener("mousemove", move, { passive: false });
             document.addEventListener("pointerup", finish);
             document.addEventListener("pointercancel", finish);
+            // Mouse fallback for older browsers/webviews where pointer events are incomplete.
+            const mouseMove = mouseEvent => move({ ...mouseEvent, pointerId: undefined, preventDefault: () => mouseEvent.preventDefault() });
+            const mouseUp = () => {
+                document.removeEventListener("mousemove", mouseMove);
+                document.removeEventListener("mouseup", mouseUp);
+                finish();
+            };
             window.addEventListener("blur", finish);
         };
 
