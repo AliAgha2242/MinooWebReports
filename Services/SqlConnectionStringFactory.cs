@@ -24,7 +24,7 @@ public sealed class SqlConnectionStringFactory(IConfiguration configuration) : I
 
         var builder = new SqlConnectionStringBuilder
         {
-            DataSource = connection.Server.Trim(),
+            DataSource = connection.ServerIp.Trim(),
             InitialCatalog = connection.DataBAset.Trim(),
             IntegratedSecurity = false,
             TrustServerCertificate = true,
