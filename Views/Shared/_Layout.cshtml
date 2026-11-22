@@ -1,3 +1,7 @@
+@inject IConfiguration Configuration
+@{
+    var minooWebCoreUrl = Configuration["Sso:LoginUrl"];
+}
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
@@ -12,6 +16,13 @@
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
+    @if (!string.IsNullOrWhiteSpace(minooWebCoreUrl))
+    {
+        <a class="global-core-link" href="@minooWebCoreUrl" title="بازگشت به سامانه اصلی مینو">
+            <span aria-hidden="true">↶</span>
+            <span>بازگشت به Minoo Web Core</span>
+        </a>
+    }
     @if (User.Identity?.IsAuthenticated == true)
     {
         <form method="post" action="/Account/Logout" class="global-logout-form">
