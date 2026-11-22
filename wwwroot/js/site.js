@@ -807,7 +807,7 @@
             };
 
             const move = moveEvent => {
-                if (pointerId !== undefined && moveEvent.pointerId !== pointerId) return;
+                if (pointerId !== undefined && moveEvent.pointerId !== undefined && moveEvent.pointerId !== pointerId) return;
                 moveEvent.preventDefault();
                 // The resize grip is on the left edge in RTL: moving it left grows the column.
                 const width = validWidth(startWidth + (startX - moveEvent.clientX));
