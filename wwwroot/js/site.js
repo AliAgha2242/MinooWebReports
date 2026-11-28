@@ -144,7 +144,8 @@
                 const searchableText = normalize(item.dataset.searchText || item.textContent || "");
                 return terms.every(term => searchableText.includes(term));
             });
-            const visibleSet = new Set(matches);
+            const displayedItems = query ? matches : matches.slice(0, 100);
+            const visibleSet = new Set(displayedItems);
             items.forEach(item => {
                 const checkbox = item.querySelector("[data-listbox-checkbox]");
                 item.hidden = !visibleSet.has(item) && !checkbox?.checked;
@@ -153,7 +154,7 @@
                 const selectedCount = selectedItems().length;
                 status.textContent = query
                     ? `${matches.length} نتیجه پیدا شد · ${selectedCount} انتخاب‌شده`
-                    : `${items.length} گزینه موجود است · ${selectedCount} انتخاب‌شده`;
+                    : `${Math.min(items.length, 100)} گزینه اول از ${items.length} گزینه · ${selectedCount} انتخاب‌شده`;
             }
         };
 
@@ -216,20 +217,22 @@
         const render = () => {
             const query = normalize(search.value);
             const terms = query.split(" ").filter(Boolean);
-            let visibleCount = 0;
+            const matches = items.filter(item => {
+                const searchableText = normalize(item.dataset.searchText || item.textContent || "");
+                return terms.every(term => searchableText.includes(term));
+            });
+            const displayedItems = query ? matches : matches.slice(0, 100);
+            const visibleSet = new Set(displayedItems);
 
             items.forEach(item => {
-                const searchableText = normalize(item.dataset.searchText || item.textContent || "");
-                const matches = terms.every(term => searchableText.includes(term));
-                item.hidden = !matches;
-                if (matches) visibleCount++;
+                item.hidden = !visibleSet.has(item) && item.dataset.value !== hiddenValue.value;
                 item.setAttribute("aria-selected", item.dataset.value === hiddenValue.value ? "true" : "false");
             });
 
             if (status) {
                 status.textContent = query
-                    ? visibleCount + " نتیجه پیدا شد"
-                    : items.length + " گزینه";
+                    ? matches.length + " نتیجه پیدا شد"
+                    : Math.min(items.length, 100) + " گزینه اول از " + items.length + " گزینه";
             }
         };
         const choose = value => {
