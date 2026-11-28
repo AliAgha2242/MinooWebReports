@@ -172,14 +172,7 @@
                                     </div>
                                     </div>
                                     <small class="reports-field-hint" data-listbox-status>
-                                        @if (options.Count > 100)
-                                        {
-                                            <text>۱۰۰ گزینه اول نمایش داده می‌شود؛ برای یافتن سایر گزینه‌ها جست‌وجو کنید.</text>
-                                        }
-                                        else
-                                        {
-                                            <text>@options.Count گزینه موجود است.</text>
-                                        }
+                                        @options.Count گزینه موجود است.
                                     </small>
                                 </div>
                             }
@@ -288,11 +281,25 @@
 
                 const items = Array.from(list.querySelectorAll("[data-listbox-option]"));
                 const selectedItems = () => items.filter(item => item.querySelector("[data-listbox-checkbox]")?.checked);
+                const normalize = value => String(value ?? "")
+                    .normalize("NFKC")
+                    .toLocaleLowerCase("fa-IR")
+                    .replace(/[يى]/g, "ی")
+                    .replace(/ك/g, "ک")
+                    .replace(/[\\u064B-\\u065F\\u0670]/g, "")
+                    .replace(/[\\u200c\\u200f\\u202a-\\u202e]/g, "")
+                    .replace(/[۰-۹]/g, digit => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+                    .replace(/[٠-٩]/g, digit => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
+                    .replace(/\\s+/g, " ")
+                    .trim();
                 const render = () => {
-                    const query = search.value.trim().toLocaleLowerCase();
-                    const matches = items.filter(item => (item.dataset.searchText || "").toLocaleLowerCase().includes(query));
-                    const visibleItems = query ? matches : matches.slice(0, 100);
-                    const visible = new Set(visibleItems);
+                    const query = normalize(search.value);
+                    const terms = query.split(" ").filter(Boolean);
+                    const matches = items.filter(item => {
+                        const searchableText = normalize(item.dataset.searchText || item.textContent || "");
+                        return terms.every(term => searchableText.includes(term));
+                    });
+                    const visible = new Set(matches);
                     items.forEach(item => {
                         const checkbox = item.querySelector("[data-listbox-checkbox]");
                         item.hidden = !visible.has(item) && !checkbox?.checked;
