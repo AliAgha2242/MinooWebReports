@@ -185,13 +185,47 @@
                             }
                             else if (parameter.Type == "ComboBox")
                             {
-                                <select id="@fieldId" name="submittedValues[@parameter.Name]" class="reports-input">
-                                    <option value="">انتخاب کنید...</option>
-                                    @foreach (var option in options)
-                                    {
-                                        <option value="@option.Value" selected="@(currentValue == option.Value)">@option.Label</option>
-                                    }
-                                </select>
+                                var selectedOption = options.FirstOrDefault(option =>
+                                    string.Equals(option.Value, currentValue, StringComparison.OrdinalIgnoreCase));
+                                <div class="reports-searchable-combobox" data-searchable-combobox>
+                                    <button type="button" id="@fieldId" class="reports-input reports-listbox-trigger"
+                                            data-combobox-trigger aria-expanded="false"
+                                            aria-label="انتخاب یک مورد برای @parameter.DisplayName">
+                                        <span data-combobox-selection-label>@(selectedOption?.Label ?? "انتخاب کنید...")</span>
+                                        <span class="reports-listbox-chevron" aria-hidden="true">⌄</span>
+                                    </button>
+                                    <div class="reports-listbox-dropdown" data-combobox-dropdown hidden>
+                                        <input type="search" class="reports-input reports-listbox-search" data-combobox-search
+                                               placeholder="جست‌وجو در گزینه‌ها..." aria-label="جست‌وجو در @parameter.DisplayName"
+                                               autocomplete="off" />
+                                        <div class="reports-listbox-options reports-combobox-options" data-combobox-options
+                                             role="listbox" aria-label="@parameter.DisplayName">
+                                            @foreach (var option in options)
+                                            {
+                                                var isSelected = string.Equals(currentValue, option.Value, StringComparison.OrdinalIgnoreCase);
+                                                <button type="button" class="reports-combobox-option" data-combobox-option
+                                                        data-value="@option.Value" data-label="@option.Label"
+                                                        data-search-text="@($"{option.Label} {option.Value}")"
+                                                        role="option" aria-selected="@(isSelected ? "true" : "false")">
+                                                    <span class="reports-listbox-option-label">@option.Label</span>
+                                                    <small class="reports-listbox-option-value" dir="ltr">@option.Value</small>
+                                                </button>
+                                            }
+                                        </div>
+                                        <button type="button" class="reports-combobox-clear" data-combobox-clear>پاک کردن انتخاب</button>
+                                    </div>
+                                    <input type="hidden" name="submittedValues[@parameter.Name]" value="@currentValue" data-combobox-value />
+                                    <small class="reports-field-hint" data-combobox-status>
+                                        @if (options.Count > 100)
+                                        {
+                                            <text>۱۰۰ گزینه اول نمایش داده می‌شود؛ برای یافتن سایر گزینه‌ها جست‌وجو کنید.</text>
+                                        }
+                                        else
+                                        {
+                                            <text>@options.Count گزینه موجود است.</text>
+                                        }
+                                    </small>
+                                </div>
                             }
                             else if ((parameter.Type == "Date" || parameter.Type == "DateTime") && string.Equals(parameter.CalendarType, "Persian", StringComparison.OrdinalIgnoreCase))
                             {
