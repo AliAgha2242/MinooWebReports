@@ -131,7 +131,7 @@
         const renderOptions = () => {
             const query = normalize(search.value);
             const matches = items.filter(item => normalize(item.dataset.searchText).includes(query));
-            const visibleItems = query ? matches.slice(0, initialLimit) : items.slice(0, initialLimit);
+            const visibleItems = query ? matches : items.slice(0, initialLimit);
             const visibleSet = new Set(visibleItems);
             items.forEach(item => {
                 const checkbox = item.querySelector("[data-listbox-checkbox]");
@@ -155,7 +155,6 @@
             if (!event.target.matches("[data-listbox-checkbox]")) return;
             syncSelectedValues();
             renderOptions();
-            closeDropdown();
         });
         search.addEventListener("input", renderOptions);
         search.addEventListener("keydown", event => {
@@ -170,6 +169,84 @@
         syncSelectedValues();
         renderOptions();
         closeDropdown();
+    });
+
+    // Searchable single-select dropdowns (same data source contract as ListBox).
+    document.querySelectorAll("[data-searchable-combobox]").forEach(container => {
+        const trigger = container.querySelector("[data-combobox-trigger]");
+        const dropdown = container.querySelector("[data-combobox-dropdown]");
+        const search = container.querySelector("[data-combobox-search]");
+        const list = container.querySelector("[data-combobox-options]");
+        const hiddenValue = container.querySelector("[data-combobox-value]");
+        const selectionLabel = container.querySelector("[data-combobox-selection-label]");
+        const status = container.querySelector("[data-combobox-status]");
+        const clearButton = container.querySelector("[data-combobox-clear]");
+        if (!trigger || !dropdown || !search || !list || !hiddenValue || !selectionLabel) return;
+        container.dataset.comboboxInitialized = "true";
+
+        const items = Array.from(list.querySelectorAll("[data-combobox-option]"));
+        const initialLimit = 100;
+        const normalize = value => String(value ?? "").trim().toLocaleLowerCase();
+        const selectedItem = () => items.find(item => item.dataset.value === hiddenValue.value);
+        const close = () => {
+            dropdown.hidden = true;
+            trigger.setAttribute("aria-expanded", "false");
+            container.classList.remove("is-open");
+        };
+        const render = () => {
+            const query = normalize(search.value);
+            const matches = items.filter(item => normalize(item.dataset.searchText).includes(query));
+            const visibleItems = query ? matches : items.slice(0, initialLimit);
+            const selected = selectedItem();
+            if (selected && !visibleItems.includes(selected)) visibleItems.push(selected);
+            const visibleSet = new Set(visibleItems);
+            items.forEach(item => {
+                item.hidden = !visibleSet.has(item);
+                item.setAttribute("aria-selected", item.dataset.value === hiddenValue.value ? "true" : "false");
+            });
+            if (status) {
+                status.textContent = query
+                    ? `${matches.length} نتیجه پیدا شد`
+                    : `${items.length > initialLimit ? "۱۰۰ گزینه اول از " + items.length : items.length} گزینه`;
+            }
+        };
+        const choose = value => {
+            hiddenValue.value = value;
+            const selected = items.find(item => item.dataset.value === value);
+            selectionLabel.textContent = selected?.dataset.label || "انتخاب کنید...";
+            search.value = "";
+            render();
+            close();
+        };
+
+        trigger.addEventListener("click", () => {
+            if (dropdown.hidden) {
+                dropdown.hidden = false;
+                trigger.setAttribute("aria-expanded", "true");
+                container.classList.add("is-open");
+                render();
+                search.focus();
+            } else {
+                close();
+            }
+        });
+        list.addEventListener("click", event => {
+            const option = event.target.closest("[data-combobox-option]");
+            if (option) choose(option.dataset.value ?? "");
+        });
+        clearButton?.addEventListener("click", () => choose(""));
+        search.addEventListener("input", render);
+        search.addEventListener("keydown", event => {
+            if (event.key === "Escape") {
+                close();
+                trigger.focus();
+            }
+        });
+        document.addEventListener("pointerdown", event => {
+            if (!container.contains(event.target)) close();
+        });
+        render();
+        close();
     });
 
     const toggle = document.querySelector("[data-password-toggle]");
