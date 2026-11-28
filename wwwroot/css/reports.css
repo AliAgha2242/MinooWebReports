@@ -742,3 +742,25 @@ body:has(.reports-result-workspace:fullscreen) { overflow:hidden; }
 .reports-result-page.is-resizing, .reports-result-page.is-resizing * {
   cursor:col-resize !important; user-select:none !important; -webkit-user-select:none !important;
 }
+
+/* Searchable single-select ComboBox shares the ListBox dropdown layout. */
+.reports-searchable-combobox { position:relative; display:grid; gap:7px; min-width:0; }
+.reports-parameter-field:has(.reports-searchable-combobox) { grid-column:1 / -1; }
+.reports-parameter-field .reports-searchable-combobox { width:100%; }
+.reports-combobox-options { align-items:stretch; }
+.reports-combobox-option {
+    display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:8px;
+    width:100%; min-height:32px; padding:5px 8px; text-align:right;
+    border:1px solid transparent; border-radius:5px; background:transparent; cursor:pointer;
+}
+.reports-combobox-option:hover,
+.reports-combobox-option[aria-selected="true"] {
+    border-color:color-mix(in srgb,var(--grid-accent,#82dce1) 35%,transparent);
+    background:color-mix(in srgb,var(--grid-accent,#82dce1) 13%,transparent);
+}
+.reports-combobox-option[hidden] { display:none !important; }
+.reports-combobox-clear {
+    justify-self:start; padding:4px 8px; border:0; border-radius:5px;
+    color:var(--grid-muted,#86a4b8); background:transparent; cursor:pointer; font-size:10px;
+}
+.reports-combobox-clear:hover { color:var(--grid-text,#d8e9f3); }
