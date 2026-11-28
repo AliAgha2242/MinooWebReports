@@ -215,16 +215,7 @@
                                         <button type="button" class="reports-combobox-clear" data-combobox-clear>پاک کردن انتخاب</button>
                                     </div>
                                     <input type="hidden" name="submittedValues[@parameter.Name]" value="@currentValue" data-combobox-value />
-                                    <small class="reports-field-hint" data-combobox-status>
-                                        @if (options.Count > 100)
-                                        {
-                                            <text>۱۰۰ گزینه اول نمایش داده می‌شود؛ برای یافتن سایر گزینه‌ها جست‌وجو کنید.</text>
-                                        }
-                                        else
-                                        {
-                                            <text>@options.Count گزینه موجود است.</text>
-                                        }
-                                    </small>
+                                    <small class="reports-field-hint" data-combobox-status>@options.Count گزینه موجود است.</small>
                                 </div>
                             }
                             else if ((parameter.Type == "Date" || parameter.Type == "DateTime") && string.Equals(parameter.CalendarType, "Persian", StringComparison.OrdinalIgnoreCase))
@@ -373,24 +364,34 @@
                 if (!trigger || !dropdown || !search || !list || !hiddenValue || !selectionLabel) return;
 
                 const items = Array.from(list.querySelectorAll("[data-combobox-option]"));
-                const selectedItem = () => items.find(item => item.dataset.value === hiddenValue.value);
+                const normalize = value => String(value ?? "")
+                    .normalize("NFKC")
+                    .toLocaleLowerCase("fa-IR")
+                    .replace(/[يى]/g, "ی")
+                    .replace(/ك/g, "ک")
+                    .replace(/[\u064B-\u065F\u0670]/g, "")
+                    .replace(/[\u200c\u200f\u202a-\u202e]/g, "")
+                    .replace(/[۰-۹]/g, digit => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+                    .replace(/[٠-٩]/g, digit => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
+                    .replace(/\s+/g, " ")
+                    .trim();
                 const close = () => {
                     dropdown.hidden = true;
                     trigger.setAttribute("aria-expanded", "false");
                     container.classList.remove("is-open");
                 };
                 const render = () => {
-                    const query = search.value.trim().toLocaleLowerCase();
-                    const matches = items.filter(item => (item.dataset.searchText || "").toLocaleLowerCase().includes(query));
-                    const visibleItems = query ? matches : items.slice(0, 100);
-                    const selected = selectedItem();
-                    if (selected && !visibleItems.includes(selected)) visibleItems.push(selected);
-                    const visible = new Set(visibleItems);
+                    const query = normalize(search.value);
+                    const terms = query.split(" ").filter(Boolean);
+                    let visibleCount = 0;
                     items.forEach(item => {
-                        item.hidden = !visible.has(item);
+                        const searchableText = normalize(item.dataset.searchText || item.textContent || "");
+                        const matches = terms.every(term => searchableText.includes(term));
+                        item.hidden = !matches;
+                        if (matches) visibleCount++;
                         item.setAttribute("aria-selected", item.dataset.value === hiddenValue.value ? "true" : "false");
                     });
-                    if (status) status.textContent = query ? `${matches.length} نتیجه پیدا شد` : `${items.length > 100 ? "۱۰۰ گزینه اول از " + items.length : items.length} گزینه`;
+                    if (status) status.textContent = query ? visibleCount + " نتیجه پیدا شد" : items.length + " گزینه";
                 };
                 const choose = value => {
                     hiddenValue.value = value;
@@ -410,6 +411,25 @@
                         search.focus();
                     } else close();
                 });
+                list.addEventListener("click", event => {
+                    const option = event.target.closest("[data-combobox-option]");
+                    if (option && list.contains(option)) choose(option.dataset.value || "");
+                });
+                clearButton?.addEventListener("click", () => choose(""));
+                search.addEventListener("input", render);
+                search.addEventListener("keydown", event => {
+                    if (event.key === "Escape") {
+                        close();
+                        trigger.focus();
+                    }
+                });
+                document.addEventListener("pointerdown", event => {
+                    if (!container.contains(event.target)) close();
+                });
+                container.dataset.comboboxInitialized = "true";
+                render();
+                close();
+            });
                 list.addEventListener("click", event => {
                     const option = event.target.closest("[data-combobox-option]");
                     if (option) choose(option.dataset.value || "");
