@@ -430,25 +430,6 @@
                 render();
                 close();
             });
-                list.addEventListener("click", event => {
-                    const option = event.target.closest("[data-combobox-option]");
-                    if (option) choose(option.dataset.value || "");
-                });
-                clearButton?.addEventListener("click", () => choose(""));
-                search.addEventListener("input", render);
-                search.addEventListener("keydown", event => {
-                    if (event.key === "Escape") {
-                        close();
-                        trigger.focus();
-                    }
-                });
-                document.addEventListener("pointerdown", event => {
-                    if (!container.contains(event.target)) close();
-                });
-                container.dataset.comboboxInitialized = "true";
-                render();
-                close();
-            });
         })();
     </script>
 }
