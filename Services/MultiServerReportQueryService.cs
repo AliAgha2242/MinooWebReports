@@ -12,7 +12,7 @@ namespace MinooWebReports.Services;
 /// The receiver must bind the supplied parameter values as SQL parameters; it must not
 /// concatenate them into the query text.
 /// </summary>
-public sealed class NotConfiguredMultiServerReportQueryService : IMultiServerReportQueryService
+public sealed class MultiServerReportQueryService : IMultiServerReportQueryService
 {
     public async Task<IReadOnlyList<ServerReportExecutionResult>> ExecuteAsync(
         ReportDefinition report,
@@ -48,12 +48,31 @@ public sealed class NotConfiguredMultiServerReportQueryService : IMultiServerRep
         // Keep querytext for compatibility with the current Rabbit message contract.
         // Parameter values and types are sent separately so the receiver can bind them
         // safely through SqlParameter instead of replacing text inside the SQL query.
+
+        string? query = report.SqlQuery;
+        foreach (var item in parameterValues)
+        {
+            query = query?.ToLower()?.Replace($"@{item.Key.ToLower()}", item.Value);
+        }
+
         Dictionary<string, object?> properties = new()
         {
-            ["querytext"] = report.SqlQuery,
-            ["parameters"] = parameterValues,
-            ["parameterTypes"] = parameterTypes
+            ["querytext"] = query
         };
+        //Dictionary<string, object?> properties = new()
+        //{
+        //    ["querytext"] = report.SqlQuery,
+        //    ["parameters"] = parameterValues,
+        //    ["parameterTypes"] = parameterTypes
+        //};
+
+
+
+
+
+
+
+
 
         var client = new Client(
             400.935,
@@ -66,6 +85,11 @@ public sealed class NotConfiguredMultiServerReportQueryService : IMultiServerRep
             ReceiverName = server.Server,
             ReceiverVahedeTejariSn = server.VahedetejariSn
         }).ToArray();
+
+
+
+
+
 
         // RabbitSender 6.5.3.4 is currently used through its synchronous API.
         // Run it on a dedicated background thread rather than occupying an ASP.NET

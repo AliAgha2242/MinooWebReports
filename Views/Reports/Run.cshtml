@@ -185,13 +185,15 @@
                             }
                             else if (parameter.Type == "ComboBox")
                             {
-                                var selectedOption = options.FirstOrDefault(option =>
+                                (string Value, string Label)? selectedOption = options.FirstOrDefault(option =>
                                     string.Equals(option.Value, currentValue, StringComparison.OrdinalIgnoreCase));
+
                                 <div class="reports-searchable-combobox" data-searchable-combobox>
                                     <button type="button" id="@fieldId" class="reports-input reports-listbox-trigger"
                                             data-combobox-trigger aria-expanded="false"
                                             aria-label="انتخاب یک مورد برای @parameter.DisplayName">
-                                        <span data-combobox-selection-label>@(selectedOption?.Label ?? "انتخاب کنید...")</span>
+                                            
+                                        <span data-combobox-selection-label>@((selectedOption)?.Label ?? "انتخاب کنید...")</span>
                                         <span class="reports-listbox-chevron" aria-hidden="true">⌄</span>
                                     </button>
                                     <div class="reports-listbox-dropdown" data-combobox-dropdown hidden>

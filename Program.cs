@@ -115,7 +115,7 @@ builder.Services.AddScoped<IConnectionStringFactory, SqlConnectionStringFactory>
 builder.Services.AddScoped<IUserReportSettingsService, UserReportSettingsService>();
 builder.Services.AddScoped<IReportRepository, SqlReportRepository>();
 builder.Services.AddScoped<IReportExecutionService, SqlReportExecutionService>();
-builder.Services.AddScoped<IMultiServerReportQueryService, NotConfiguredMultiServerReportQueryService>();
+builder.Services.AddScoped<IMultiServerReportQueryService, MultiServerReportQueryService>();
 
 var app = builder.Build();
 
