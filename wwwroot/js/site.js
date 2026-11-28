@@ -95,8 +95,17 @@
         container.dataset.listboxInitialized = "true";
 
         const items = Array.from(list.querySelectorAll("[data-listbox-option]"));
-        const initialLimit = 100;
-        const normalize = value => String(value ?? "").trim().toLocaleLowerCase();
+        const normalize = value => String(value ?? "")
+            .normalize("NFKC")
+            .toLocaleLowerCase("fa-IR")
+            .replace(/[يى]/g, "ی")
+            .replace(/ك/g, "ک")
+            .replace(/[\\u064B-\\u065F\\u0670]/g, "")
+            .replace(/[\\u200c\\u200f\\u202a-\\u202e]/g, "")
+            .replace(/[۰-۹]/g, digit => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+            .replace(/[٠-٩]/g, digit => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
+            .replace(/\\s+/g, " ")
+            .trim();
         const selectedItems = () => items.filter(item => item.querySelector("[data-listbox-checkbox]")?.checked);
 
         const closeDropdown = () => {
@@ -130,20 +139,21 @@
         };
         const renderOptions = () => {
             const query = normalize(search.value);
-            const matches = items.filter(item => normalize(item.dataset.searchText).includes(query));
-            const visibleItems = query ? matches : items.slice(0, initialLimit);
-            const visibleSet = new Set(visibleItems);
+            const terms = query.split(" ").filter(Boolean);
+            const matches = items.filter(item => {
+                const searchableText = normalize(item.dataset.searchText || item.textContent || "");
+                return terms.every(term => searchableText.includes(term));
+            });
+            const visibleSet = new Set(matches);
             items.forEach(item => {
                 const checkbox = item.querySelector("[data-listbox-checkbox]");
-                item.hidden = !visibleSet.has(item) && !checkbox.checked;
+                item.hidden = !visibleSet.has(item) && !checkbox?.checked;
             });
             if (status) {
                 const selectedCount = selectedItems().length;
-                const shownCount = visibleItems.length + items.filter(item =>
-                    item.querySelector("[data-listbox-checkbox]")?.checked && !visibleSet.has(item)).length;
                 status.textContent = query
-                    ? `${shownCount} مورد از ${matches.length} نتیجه نمایش داده شده · ${selectedCount} انتخاب‌شده`
-                    : `${items.length > initialLimit ? "۱۰۰ گزینه اول از " + items.length : items.length} گزینه · ${selectedCount} انتخاب‌شده`;
+                    ? `${matches.length} نتیجه پیدا شد · ${selectedCount} انتخاب‌شده`
+                    : `${items.length} گزینه موجود است · ${selectedCount} انتخاب‌شده`;
             }
         };
 
