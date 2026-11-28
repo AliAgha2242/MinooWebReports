@@ -286,11 +286,11 @@
                     .toLocaleLowerCase("fa-IR")
                     .replace(/[يى]/g, "ی")
                     .replace(/ك/g, "ک")
-                    .replace(/[\\u064B-\\u065F\\u0670]/g, "")
-                    .replace(/[\\u200c\\u200f\\u202a-\\u202e]/g, "")
+                    .replace(/[\u064B-\u065F\u0670]/g, "")
+                    .replace(/[\u200c\u200f\u202a-\u202e]/g, "")
                     .replace(/[۰-۹]/g, digit => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
                     .replace(/[٠-٩]/g, digit => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
-                    .replace(/\\s+/g, " ")
+                    .replace(/\s+/g, " ")
                     .trim();
                 const render = () => {
                     const query = normalize(search.value);
