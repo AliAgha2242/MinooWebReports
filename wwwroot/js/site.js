@@ -173,6 +173,8 @@
 
     // Searchable single-select dropdowns (same data source contract as ListBox).
     document.querySelectorAll("[data-searchable-combobox]").forEach(container => {
+        if (container.dataset.comboboxInitialized === "true") return;
+
         const trigger = container.querySelector("[data-combobox-trigger]");
         const dropdown = container.querySelector("[data-combobox-dropdown]");
         const search = container.querySelector("[data-combobox-search]");
@@ -182,11 +184,19 @@
         const status = container.querySelector("[data-combobox-status]");
         const clearButton = container.querySelector("[data-combobox-clear]");
         if (!trigger || !dropdown || !search || !list || !hiddenValue || !selectionLabel) return;
-        container.dataset.comboboxInitialized = "true";
 
         const items = Array.from(list.querySelectorAll("[data-combobox-option]"));
-        const initialLimit = 100;
-        const normalize = value => String(value ?? "").trim().toLocaleLowerCase();
+        const normalize = value => String(value ?? "")
+            .normalize("NFKC")
+            .toLocaleLowerCase("fa-IR")
+            .replace(/[يى]/g, "ی")
+            .replace(/ك/g, "ک")
+            .replace(/[\u064B-\u065F\u0670]/g, "")
+            .replace(/[\u200c\u200f\u202a-\u202e]/g, "")
+            .replace(/[۰-۹]/g, digit => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+            .replace(/[٠-٩]/g, digit => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
+            .replace(/\s+/g, " ")
+            .trim();
         const selectedItem = () => items.find(item => item.dataset.value === hiddenValue.value);
         const close = () => {
             dropdown.hidden = true;
@@ -195,19 +205,21 @@
         };
         const render = () => {
             const query = normalize(search.value);
-            const matches = items.filter(item => normalize(item.dataset.searchText).includes(query));
-            const visibleItems = query ? matches : items.slice(0, initialLimit);
-            const selected = selectedItem();
-            if (selected && !visibleItems.includes(selected)) visibleItems.push(selected);
-            const visibleSet = new Set(visibleItems);
+            const terms = query.split(" ").filter(Boolean);
+            let visibleCount = 0;
+
             items.forEach(item => {
-                item.hidden = !visibleSet.has(item);
+                const searchableText = normalize(item.dataset.searchText || item.textContent || "");
+                const matches = terms.every(term => searchableText.includes(term));
+                item.hidden = !matches;
+                if (matches) visibleCount++;
                 item.setAttribute("aria-selected", item.dataset.value === hiddenValue.value ? "true" : "false");
             });
+
             if (status) {
                 status.textContent = query
-                    ? `${matches.length} نتیجه پیدا شد`
-                    : `${items.length > initialLimit ? "۱۰۰ گزینه اول از " + items.length : items.length} گزینه`;
+                    ? visibleCount + " نتیجه پیدا شد"
+                    : items.length + " گزینه";
             }
         };
         const choose = value => {
@@ -219,20 +231,19 @@
             close();
         };
 
-        trigger.addEventListener("click", () => {
+        trigger.addEventListener("click", event => {
+            event.preventDefault();
             if (dropdown.hidden) {
                 dropdown.hidden = false;
                 trigger.setAttribute("aria-expanded", "true");
                 container.classList.add("is-open");
                 render();
                 search.focus();
-            } else {
-                close();
-            }
+            } else close();
         });
         list.addEventListener("click", event => {
             const option = event.target.closest("[data-combobox-option]");
-            if (option) choose(option.dataset.value ?? "");
+            if (option && list.contains(option)) choose(option.dataset.value ?? "");
         });
         clearButton?.addEventListener("click", () => choose(""));
         search.addEventListener("input", render);
@@ -245,6 +256,8 @@
         document.addEventListener("pointerdown", event => {
             if (!container.contains(event.target)) close();
         });
+
+        container.dataset.comboboxInitialized = "true";
         render();
         close();
     });
